@@ -1,7 +1,7 @@
 ﻿/* BSD license
  * Credit:  APDU Command from Mr.Manoi http://hosxp.net/index.php?option=com_smf&topic=22496
  * Require add reference: PresentationCore, System.Xaml, WindowsBase
- * Require add refrernce(Nuget): PCSC
+ * Require add refrernce(Nuget): PCSC ( http://www.nuget.org/packages/PCSC/ )
  */
 
 using System;
