@@ -51,8 +51,15 @@
             this.lbl_sex = new System.Windows.Forms.Label();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.btnReadWithPhoto = new System.Windows.Forms.Button();
             this.PhotoProgressBar1 = new System.Windows.Forms.ProgressBar();
+            this.btnReadWithPhoto = new System.Windows.Forms.Button();
+            this.cbxReaderList = new System.Windows.Forms.ComboBox();
+            this.chkBoxMonitor = new System.Windows.Forms.CheckBox();
+            this.btnRefreshReaderList = new System.Windows.Forms.Button();
+            this.lbl_issue = new System.Windows.Forms.Label();
+            this.label11 = new System.Windows.Forms.Label();
+            this.lbl_expire = new System.Windows.Forms.Label();
+            this.label13 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -222,7 +229,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(145, 184);
+            this.label9.Location = new System.Drawing.Point(145, 179);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(28, 13);
             this.label9.TabIndex = 18;
@@ -231,7 +238,7 @@
             // lbl_sex
             // 
             this.lbl_sex.AutoSize = true;
-            this.lbl_sex.Location = new System.Drawing.Point(182, 184);
+            this.lbl_sex.Location = new System.Drawing.Point(182, 179);
             this.lbl_sex.Name = "lbl_sex";
             this.lbl_sex.Size = new System.Drawing.Size(39, 13);
             this.lbl_sex.TabIndex = 19;
@@ -245,37 +252,109 @@
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Location = new System.Drawing.Point(538, 12);
+            this.pictureBox1.Location = new System.Drawing.Point(536, 130);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(297, 355);
             this.pictureBox1.TabIndex = 20;
             this.pictureBox1.TabStop = false;
+            // 
+            // PhotoProgressBar1
+            // 
+            this.PhotoProgressBar1.Location = new System.Drawing.Point(185, 223);
+            this.PhotoProgressBar1.MarqueeAnimationSpeed = 0;
+            this.PhotoProgressBar1.Name = "PhotoProgressBar1";
+            this.PhotoProgressBar1.Size = new System.Drawing.Size(211, 23);
+            this.PhotoProgressBar1.TabIndex = 22;
             // 
             // btnReadWithPhoto
             // 
             this.btnReadWithPhoto.Location = new System.Drawing.Point(301, 12);
             this.btnReadWithPhoto.Name = "btnReadWithPhoto";
             this.btnReadWithPhoto.Size = new System.Drawing.Size(95, 40);
-            this.btnReadWithPhoto.TabIndex = 21;
+            this.btnReadWithPhoto.TabIndex = 23;
             this.btnReadWithPhoto.Text = "Read with Photo";
             this.btnReadWithPhoto.UseVisualStyleBackColor = true;
-            this.btnReadWithPhoto.Click += new System.EventHandler(this.button1_Click);
+            this.btnReadWithPhoto.Click += new System.EventHandler(this.btnReadWithPhoto_Click);
             // 
-            // PhotoProgressBar1
+            // cbxReaderList
             // 
-            this.PhotoProgressBar1.Location = new System.Drawing.Point(185, 215);
-            this.PhotoProgressBar1.MarqueeAnimationSpeed = 0;
-            this.PhotoProgressBar1.Name = "PhotoProgressBar1";
-            this.PhotoProgressBar1.Size = new System.Drawing.Size(211, 23);
-            this.PhotoProgressBar1.TabIndex = 22;
+            this.cbxReaderList.FormattingEnabled = true;
+            this.cbxReaderList.Location = new System.Drawing.Point(536, 41);
+            this.cbxReaderList.Name = "cbxReaderList";
+            this.cbxReaderList.Size = new System.Drawing.Size(297, 21);
+            this.cbxReaderList.TabIndex = 24;
+            // 
+            // chkBoxMonitor
+            // 
+            this.chkBoxMonitor.AutoSize = true;
+            this.chkBoxMonitor.Location = new System.Drawing.Point(536, 13);
+            this.chkBoxMonitor.Name = "chkBoxMonitor";
+            this.chkBoxMonitor.Size = new System.Drawing.Size(88, 17);
+            this.chkBoxMonitor.TabIndex = 25;
+            this.chkBoxMonitor.Text = "Auto/Monitor";
+            this.chkBoxMonitor.UseVisualStyleBackColor = true;
+            this.chkBoxMonitor.CheckedChanged += new System.EventHandler(this.chkBoxMonitor_CheckedChanged);
+            // 
+            // btnRefreshReaderList
+            // 
+            this.btnRefreshReaderList.Location = new System.Drawing.Point(672, 9);
+            this.btnRefreshReaderList.Name = "btnRefreshReaderList";
+            this.btnRefreshReaderList.Size = new System.Drawing.Size(124, 23);
+            this.btnRefreshReaderList.TabIndex = 26;
+            this.btnRefreshReaderList.Text = "Refresh reader list";
+            this.btnRefreshReaderList.UseVisualStyleBackColor = true;
+            this.btnRefreshReaderList.Click += new System.EventHandler(this.btnRefreshReaderList_Click);
+            // 
+            // lbl_issue
+            // 
+            this.lbl_issue.AutoSize = true;
+            this.lbl_issue.Location = new System.Drawing.Point(182, 192);
+            this.lbl_issue.Name = "lbl_issue";
+            this.lbl_issue.Size = new System.Drawing.Size(47, 13);
+            this.lbl_issue.TabIndex = 28;
+            this.lbl_issue.Text = "lbl_issue";
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(113, 192);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(60, 13);
+            this.label11.TabIndex = 27;
+            this.label11.Text = "วันออกบัตร";
+            // 
+            // lbl_expire
+            // 
+            this.lbl_expire.AutoSize = true;
+            this.lbl_expire.Location = new System.Drawing.Point(182, 205);
+            this.lbl_expire.Name = "lbl_expire";
+            this.lbl_expire.Size = new System.Drawing.Size(51, 13);
+            this.lbl_expire.TabIndex = 30;
+            this.lbl_expire.Text = "lbl_expire";
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(113, 205);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(60, 13);
+            this.label13.TabIndex = 29;
+            this.label13.Text = "วันหมดอายุ";
             // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(845, 498);
-            this.Controls.Add(this.PhotoProgressBar1);
+            this.Controls.Add(this.lbl_expire);
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.lbl_issue);
+            this.Controls.Add(this.label11);
+            this.Controls.Add(this.btnRefreshReaderList);
+            this.Controls.Add(this.chkBoxMonitor);
+            this.Controls.Add(this.cbxReaderList);
             this.Controls.Add(this.btnReadWithPhoto);
+            this.Controls.Add(this.PhotoProgressBar1);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.lbl_sex);
             this.Controls.Add(this.label9);
@@ -329,8 +408,15 @@
         private System.Windows.Forms.Label lbl_sex;
         private System.Windows.Forms.ImageList imageList1;
         private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.Button btnReadWithPhoto;
         private System.Windows.Forms.ProgressBar PhotoProgressBar1;
+        private System.Windows.Forms.Button btnReadWithPhoto;
+        private System.Windows.Forms.ComboBox cbxReaderList;
+        private System.Windows.Forms.CheckBox chkBoxMonitor;
+        private System.Windows.Forms.Button btnRefreshReaderList;
+        private System.Windows.Forms.Label lbl_issue;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Label lbl_expire;
+        private System.Windows.Forms.Label label13;
     }
 }
 

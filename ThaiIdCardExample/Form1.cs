@@ -73,17 +73,16 @@ namespace ThaiIdCardExample
                 lbl_en_prefix.Text = personal.En_Prefix;
                 lbl_en_firstname.Text = personal.En_Firstname;
                 lbl_en_lastname.Text = personal.En_Lastname;
+                lbl_issue.Text = personal.Issue.ToString("dd/MM/yyyy");
+                lbl_expire.Text = personal.Expire.ToString("dd/MM/yyyy");
 
                 // ขี้เกรียจวาด label แล้ว
-                LogLine(personal.Issue.ToString());
-                LogLine(personal.Expire.ToString());
-
                 LogLine(personal.Address);
                 LogLine(personal.addrHouseNo); // บ้านเลขที่ 
                 LogLine(personal.addrVillageNo); // หมู่ที่
                 LogLine(personal.addrLane); // ซอย
                 LogLine(personal.addrRoad); // ถนน
-                LogLine(personal.addrTambol); 
+                LogLine(personal.addrTambol);
                 LogLine(personal.addrAmphur);
                 LogLine(personal.addrProvince);
             }
@@ -93,7 +92,9 @@ namespace ThaiIdCardExample
             }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+
+
+        private void btnReadWithPhoto_Click(object sender, EventArgs e)
         {
             ThaiIDCard idcard = new ThaiIDCard();
             idcard.eventPhotoProgress += new handlePhotoProgress(photoProgress);
@@ -109,6 +110,8 @@ namespace ThaiIdCardExample
                 lbl_en_prefix.Text = personal.En_Prefix;
                 lbl_en_firstname.Text = personal.En_Firstname;
                 lbl_en_lastname.Text = personal.En_Lastname;
+                lbl_issue.Text = personal.Issue.ToString("dd/MM/yyyy");
+                lbl_expire.Text = personal.Expire.ToString("dd/MM/yyyy");
                 pictureBox1.Image = personal.PhotoBitmap;
             }
             else if (idcard.ErrorCode() > 0)
@@ -119,15 +122,91 @@ namespace ThaiIdCardExample
 
         private void photoProgress(int value, int maximum)
         {
-            if (PhotoProgressBar1.Maximum != maximum)
-                PhotoProgressBar1.Maximum = maximum;
-            
-            // fix progress bar sync.
-            if (PhotoProgressBar1.Maximum > value)
-                PhotoProgressBar1.Value = value + 1;
-            
-            PhotoProgressBar1.Value = value;
-            //LogLine(String.Format("{0} of {1}", value, maximum));
+            if (txtBoxLog.InvokeRequired)
+            {
+                if (PhotoProgressBar1.Maximum != maximum)
+                    PhotoProgressBar1.BeginInvoke(new MethodInvoker(delegate { PhotoProgressBar1.Maximum = maximum; }));
+
+                // fix progress bar sync.
+                if (PhotoProgressBar1.Maximum > value)
+                    PhotoProgressBar1.BeginInvoke(new MethodInvoker(delegate { PhotoProgressBar1.Value = value + 1; }));
+
+                PhotoProgressBar1.BeginInvoke(new MethodInvoker(delegate { PhotoProgressBar1.Value = value; }));
+            }
+            else
+            {
+                if (PhotoProgressBar1.Maximum != maximum)
+                    PhotoProgressBar1.Maximum = maximum;
+
+                // fix progress bar sync.
+                if (PhotoProgressBar1.Maximum > value)
+                    PhotoProgressBar1.Value = value + 1;
+
+                PhotoProgressBar1.Value = value;
+            }
+      
+        }
+
+        private void btnRefreshReaderList_Click(object sender, EventArgs e)
+        {
+            cbxReaderList.Items.Clear();
+            cbxReaderList.SelectedIndex = -1;
+            cbxReaderList.SelectedText = String.Empty;
+            cbxReaderList.Text = string.Empty;
+            cbxReaderList.Refresh();
+
+            ThaiIDCard idcard = new ThaiIDCard();
+            string[] readers = idcard.GetReaders();
+            if (readers == null) return;
+
+
+            foreach (string r in readers)
+            {
+                cbxReaderList.Items.Add(r);
+            }
+            cbxReaderList.DroppedDown = true;
+        }
+
+        private void chkBoxMonitor_CheckedChanged(object sender, EventArgs e)
+        {
+            ThaiIDCard idcard = new ThaiIDCard();
+
+            if (chkBoxMonitor.Checked)
+            {
+                if (cbxReaderList.SelectedItem == null)
+                {
+                    MessageBox.Show("No reader select to monitoring.");
+                    chkBoxMonitor.Checked = false;
+                    return;
+                }
+                idcard.MonitorStart(cbxReaderList.SelectedItem.ToString());
+                idcard.eventCardInsertedWithPhoto += new handleCardInserted(CardInserted);
+                idcard.eventPhotoProgress += new handlePhotoProgress(photoProgress);
+
+            }
+            else
+            {
+                if (cbxReaderList.SelectedItem != null)
+                    idcard.MonitorStop(cbxReaderList.SelectedItem.ToString());
+            }
+        }
+
+        public void CardInserted(Personal personal)
+        {
+            if (personal == null)
+                return;
+            lbl_cid.BeginInvoke(new MethodInvoker(delegate { lbl_cid.Text = personal.Citizenid; }));
+            lbl_birthday.BeginInvoke(new MethodInvoker(delegate { lbl_birthday.Text = personal.Birthday.ToString("dd/MM/yyyy"); }));
+            lbl_sex.BeginInvoke(new MethodInvoker(delegate { lbl_sex.Text = personal.Sex; }));
+            lbl_th_prefix.BeginInvoke(new MethodInvoker(delegate { lbl_th_prefix.Text = personal.Th_Prefix; }));
+            lbl_th_firstname.BeginInvoke(new MethodInvoker(delegate { lbl_th_firstname.Text = personal.Th_Firstname; }));
+            lbl_th_lastname.BeginInvoke(new MethodInvoker(delegate { lbl_th_lastname.Text = personal.Th_Lastname; }));
+            lbl_en_prefix.BeginInvoke(new MethodInvoker(delegate { lbl_en_prefix.Text = personal.En_Prefix; }));
+            lbl_en_firstname.BeginInvoke(new MethodInvoker(delegate { lbl_en_firstname.Text = personal.En_Firstname; }));
+            lbl_en_lastname.BeginInvoke(new MethodInvoker(delegate { lbl_en_lastname.Text = personal.En_Lastname; }));
+            lbl_issue.BeginInvoke(new MethodInvoker(delegate { lbl_issue.Text = personal.Issue.ToString("dd/MM/yyyy"); }));
+            lbl_expire.BeginInvoke(new MethodInvoker(delegate { lbl_expire.Text = personal.Expire.ToString("dd/MM/yyyy"); }));
+            pictureBox1.BeginInvoke(new MethodInvoker(delegate { pictureBox1.Image = personal.PhotoBitmap; }));
         }
     }
 }

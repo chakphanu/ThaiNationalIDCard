@@ -15,6 +15,8 @@ using PCSC;
 namespace ThaiNationalIDCard
 {
     public delegate void handlePhotoProgress(int value, int maximum);
+    public delegate void handleCardInserted(Personal personal);
+    public delegate void handleCardRemoved();
 
     public class ThaiIDCard
     {
@@ -26,11 +28,15 @@ namespace ThaiNationalIDCard
         private IntPtr _pioSendPci;
         private SCardContext _hContext;
         private IAPDU_THAILAND_IDCARD _apdu;
+        private SCardMonitor _monitor;
 
         private string _error_message;
         private int _error_code;
 
         public event handlePhotoProgress eventPhotoProgress;
+        public event handleCardInserted eventCardInserted;
+        public event handleCardInserted eventCardInsertedWithPhoto;
+        public event handleCardRemoved eventCardRemoved;
 
         public int ErrorCode()
         {
@@ -43,6 +49,85 @@ namespace ThaiNationalIDCard
         }
 
 
+
+        private void _StatusChanged(StatusChangeEventArgs args)
+        {
+            if (args.NewState != SCRState.Present 
+                || args.NewState == SCRState.InUse 
+                || args.NewState == SCRState.Unpowered
+                || args.NewState == SCRState.Mute
+                || args.NewState == SCRState.Unavailable)
+            {
+                return;
+            }
+
+
+            try
+            {
+                Personal personal;
+                if (eventCardInserted != null)
+                {
+                    personal = readAll();
+                    eventCardInserted(personal);
+                }
+                if (eventCardInsertedWithPhoto != null)
+                {
+                    personal = readAllPhoto();
+                    eventCardInsertedWithPhoto(personal);
+                }
+            }
+            catch (PCSCException ex)
+            {
+                _error_code = ECODE_SCardError;
+                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Console.WriteLine(_error_message);
+            }
+        }
+
+        private void _Removed(string eventName, CardStatusEventArgs unknown)
+        {
+            if (eventCardRemoved != null)
+            {
+                eventCardRemoved();
+            }
+        }
+
+        public bool MonitorStart(string readerName)
+        {
+            try
+            {
+                _monitor = new SCardMonitor(new SCardContext(), SCardScope.System);
+                _monitor.StatusChanged += (sender, args) => _StatusChanged(args);
+                _monitor.CardRemoved += (sender, args) => _Removed("CardRemoved", args);
+
+                _monitor.Start(readerName);
+                return true;
+            }
+            catch (PCSCException ex)
+            {
+                _error_code = ECODE_SCardError;
+                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Console.WriteLine(_error_message);
+                return false;
+            }
+        }
+        public bool MonitorStop(string readerName)
+        {
+            try
+            {
+                if (_monitor != null)
+                    _monitor.Cancel();
+                return true;
+
+            }
+            catch (PCSCException ex)
+            {
+                _error_code = ECODE_SCardError;
+                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Console.WriteLine(_error_message);
+                return false;
+            }
+        }
 
         private void CheckErr(SCardError _err)
         {
@@ -72,9 +157,6 @@ namespace ThaiNationalIDCard
                 pbRecvBuffer = new byte[256];
                 _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
                 CheckErr(_err);
-                for (int i = 0; i < pbRecvBuffer.Length; i++)
-                    Console.Write("{0:X2} ", pbRecvBuffer[i]);
-                Console.WriteLine();
             }
             return pbRecvBuffer;
         }
@@ -86,7 +168,6 @@ namespace ThaiNationalIDCard
 
             for (int i = 0; i < cmds_photo.Length; i++)
             {
-                Console.WriteLine("Reading photo {0} of {1} ... ", i + 1, cmds_photo.Length);
                 byte[] recv1 = new byte[256];
                 _err = _reader.Transmit(_pioSendPci, cmds_photo[i].CMD1, ref recv1);
                 CheckErr(_err);
@@ -107,7 +188,33 @@ namespace ThaiNationalIDCard
             return s.ToArray();
         }
 
-        public Boolean Open(int _reader_num = 0)
+
+        public string[] GetReaders()
+        {
+            try
+            {
+                // Establish SCard context
+                _hContext = new SCardContext();
+                _hContext.Establish(SCardScope.System);
+                string[] szReaders = _hContext.GetReaders();
+                _hContext.Release();
+
+                if (szReaders.Length <= 0)
+                    throw new PCSCException(SCardError.NoReadersAvailable,
+                        "Could not find any Smartcard reader.");
+                return szReaders;
+            }
+            catch (PCSCException ex)
+            {
+                _error_code = ECODE_SCardError;
+                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Console.WriteLine(_error_message);
+                return null;
+            }
+        }
+
+
+        public Boolean Open(string readerName = null)
         {
             try
             {
@@ -115,20 +222,31 @@ namespace ThaiNationalIDCard
                 _hContext = new SCardContext();
                 _hContext.Establish(SCardScope.System);
 
-                // Retrieve the list of Smartcard _readers
-                string[] szReaders = _hContext.GetReaders();
-                if (szReaders.Length <= 0)
-                    throw new PCSCException(SCardError.NoReadersAvailable,
-                        "Could not find any Smartcard _reader.");
-
                 // Create a _reader object using the existing context
                 _reader = new SCardReader(_hContext);
 
                 // Connect to the card
-                _err = _reader.Connect(szReaders[_reader_num],
-                    SCardShareMode.Shared,
-                    SCardProtocol.T0 | SCardProtocol.T1);
-                CheckErr(_err);
+                if (readerName == null || readerName == String.Empty)
+                {
+                    // Retrieve the list of Smartcard _readers
+                    string[] szReaders = _hContext.GetReaders();
+                    if (szReaders.Length <= 0)
+                        throw new PCSCException(SCardError.NoReadersAvailable,
+                            "Could not find any Smartcard _reader.");
+
+                    _err = _reader.Connect(szReaders[0],
+                                SCardShareMode.Exclusive,
+                                SCardProtocol.T0 | SCardProtocol.T1);
+                    CheckErr(_err);
+                }
+                else
+                {
+                    _err = _reader.Connect(readerName,
+                                SCardShareMode.Exclusive,
+                                SCardProtocol.T0 | SCardProtocol.T1);
+                    CheckErr(_err);
+                }
+
 
                 _pioSendPci = new IntPtr();
                 switch (_reader.ActiveProtocol)
@@ -155,11 +273,6 @@ namespace ThaiNationalIDCard
                     out state,          // contains the current state (flags)
                     out proto,          // contains the currently used communication protocol
                     out atr);           // contains the ATR
-
-                Console.Write("ATR: ");
-                for (int i = 0; i < atr.Length; i++)
-                    Console.Write("{0:X2} ", atr[i]);
-                Console.WriteLine();
 
                 if (atr == null || atr.Length < 2)
                 {
@@ -228,10 +341,10 @@ namespace ThaiNationalIDCard
             return null;
         }
 
-        public Personal readAll(bool with_photo = false)
+        public Personal readAll(bool with_photo = false, string readerName = null)
         {
             Personal personal = new Personal();
-            if (Open())
+            if (Open(readerName))
             {
                 // Send SELECT/RESET command
                 SendCommand(_apdu.CMD_SELECT());
@@ -261,9 +374,9 @@ namespace ThaiNationalIDCard
             return null;
         }
 
-        public Personal readAllPhoto()
+        public Personal readAllPhoto(string readerName = null)
         {
-            return readAll(true);
+            return readAll(true, readerName);
         }
 
 

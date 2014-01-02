@@ -41,6 +41,8 @@ namespace ThaiNationalIDCard
         {
             get
             {
+                if (_photo_jpeg == null)
+                    return null;
                 JpegBitmapDecoder decoder = new JpegBitmapDecoder(new MemoryStream(_photo_jpeg), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
                 BitmapSource bitmapSource = decoder.Frames[0];
                 using (System.IO.MemoryStream outStream = new System.IO.MemoryStream())
