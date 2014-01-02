@@ -3,8 +3,8 @@ ThaiNationalIDCard
 
 ThaiNational IDCard(Smartcard) helper
 
-1.Open ThaiNationalIDCard project
+To install ThaiNationalIDCard, run the following command in the Package Manager Console
 
-2.Add http://www.nuget.org/packages/PCSC/  to ThaiNationalIDCard project
+PM> Install-Package ThaiNationalIDCard
 
-3.Run/See example :)
+See example from: https://github.com/chakphanu/ThaiNationalIDCard.Example
