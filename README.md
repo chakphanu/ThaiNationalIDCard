@@ -9,8 +9,7 @@ PM> Install-Package ThaiNationalIDCard
 
 See example from: https://github.com/chakphanu/ThaiNationalIDCard.Example
 
-Type of thai smartcard https://github.com/kolry/ThaiNationalIDCard/wiki/Smart-card-compare-type.
-
+Type of thai smartcard See on wiki. https://github.com/kolry/ThaiNationalIDCard/wiki/_pages
 
 ``` CSharp
 using ThaiNationalIDCard;
