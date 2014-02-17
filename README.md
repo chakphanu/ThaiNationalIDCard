@@ -1,6 +1,9 @@
 ThaiNationalIDCard
 ==================
 
+Credit:  APDU Command from Mr.Manoi http://hosxp.net/index.php?option=com_smf&topic=22496
+
+
 ThaiNational IDCard(Smartcard) helper
 
 To install ThaiNationalIDCard, run the following command in the Package Manager Console
