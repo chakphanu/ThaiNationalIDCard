@@ -278,8 +278,12 @@ namespace ThaiNationalIDCard
                 {
                     return false;
                 }
-
-                if (atr[0] == 0x3B && atr[1] == 0x68)
+                
+                if (atr[0] == 0x3B && atr[1] == 0x68)       //Smart card tested with old type (Figure A.)
+                {
+                    _apdu = new APDU_THAILAND_IDCARD_3B68();
+                }
+                else if (atr[0] == 0x3B && atr[1] == 0x78)   //Smart card tested with new type (figure B.) 
                 {
                     _apdu = new APDU_THAILAND_IDCARD_3B68();
                 }
