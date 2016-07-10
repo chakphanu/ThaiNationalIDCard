@@ -10,9 +10,7 @@ To install ThaiNationalIDCard, run the following command in the Package Manager 
 
 PM> Install-Package ThaiNationalIDCard
 
-See example from: https://github.com/chakphanu/ThaiNationalIDCard.Example
-
-Type of thai smartcard See on wiki. https://github.com/kolry/ThaiNationalIDCard/wiki/_pages
+Credit 3B 78 Type of thai smartcard See on wiki. https://github.com/kolry/ThaiNationalIDCard/wiki/_pages
 
 ``` CSharp
 using ThaiNationalIDCard;
@@ -36,9 +34,8 @@ public void readCard()
                 Console.WriteLine(personal.Issue.ToString("dd/MM/yyyy")); // วันออกบัตร
                 Console.WriteLine(personal.Expire.ToString("dd/MM/yyyy")); // วันหมดอายุ
 
-                // ขี้เกรียจวาด label แล้ว
                 Console.WriteLine(personal.Address);
-                Console.WriteLine(personal.addrHouseNo); // บ้านเลขที่ 
+                Console.WriteLine(personal.addrHouseNo); // บ้านเลขที่
                 Console.WriteLine(personal.addrVillageNo); // หมู่ที่
                 Console.WriteLine(personal.addrLane); // ซอย
                 Console.WriteLine(personal.addrRoad); // ถนน
@@ -51,5 +48,5 @@ public void readCard()
                 Console.WriteLine(idcard.Error());
             }
 }            
-            
+
 ```
