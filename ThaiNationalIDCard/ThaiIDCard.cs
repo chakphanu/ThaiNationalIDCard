@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using PCSC;
+using System.Diagnostics;
+using System.Threading;
 
 namespace ThaiNationalIDCard
 {
@@ -23,10 +25,12 @@ namespace ThaiNationalIDCard
         const int ECODE_SCardError = 256;
         const int ECODE_UNSUPPORT_CARD = 1;
 
+        private static readonly IContextFactory _contextFactory = ContextFactory.Instance;
+        private ISCardContext _hContext;
         private SCardReader _reader;
         private SCardError _err;
         private IntPtr _pioSendPci;
-        private SCardContext _hContext;
+        
         private IAPDU_THAILAND_IDCARD _apdu;
         private SCardMonitor _monitor;
 
@@ -48,40 +52,34 @@ namespace ThaiNationalIDCard
             return _error_message;
         }
 
-
-
-        private void _StatusChanged(StatusChangeEventArgs args)
+        public string Version()
         {
-            if (args.NewState != SCRState.Present 
-                || args.NewState == SCRState.InUse 
-                || args.NewState == SCRState.Unpowered
-                || args.NewState == SCRState.Mute
-                || args.NewState == SCRState.Unavailable)
-            {
-                return;
-            }
+            return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        }
 
-
+        private void _Inserted(CardStatusEventArgs args)
+        {
             try
             {
                 Personal personal;
                 if (eventCardInserted != null)
                 {
-                    personal = readAll();
+                    personal = readAll(false, args.ReaderName);
                     eventCardInserted(personal);
                 }
                 if (eventCardInsertedWithPhoto != null)
                 {
-                    personal = readAllPhoto();
+                    personal = readAll(true, args.ReaderName);
                     eventCardInsertedWithPhoto(personal);
                 }
             }
             catch (PCSCException ex)
             {
                 _error_code = ECODE_SCardError;
-                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
-                Console.WriteLine(_error_message);
+                _error_message = "_Inserted Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Debug.Print(_error_message);
             }
+           
         }
 
         private void _Removed(string eventName, CardStatusEventArgs unknown)
@@ -96,8 +94,8 @@ namespace ThaiNationalIDCard
         {
             try
             {
-                _monitor = new SCardMonitor(new SCardContext(), SCardScope.System);
-                _monitor.StatusChanged += (sender, args) => _StatusChanged(args);
+                _monitor = new SCardMonitor(_contextFactory, SCardScope.System);
+                _monitor.CardInserted += (sender, args) => _Inserted(args);
                 _monitor.CardRemoved += (sender, args) => _Removed("CardRemoved", args);
 
                 _monitor.Start(readerName);
@@ -106,8 +104,8 @@ namespace ThaiNationalIDCard
             catch (PCSCException ex)
             {
                 _error_code = ECODE_SCardError;
-                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
-                Console.WriteLine(_error_message);
+                _error_message = "MonitorStart Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Debug.Print(_error_message);
                 return false;
             }
         }
@@ -123,8 +121,8 @@ namespace ThaiNationalIDCard
             catch (PCSCException ex)
             {
                 _error_code = ECODE_SCardError;
-                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
-                Console.WriteLine(_error_message);
+                _error_message = "MonitorStop Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Debug.Print(_error_message);
                 return false;
             }
         }
@@ -193,9 +191,7 @@ namespace ThaiNationalIDCard
         {
             try
             {
-                // Establish SCard context
-                _hContext = new SCardContext();
-                _hContext.Establish(SCardScope.System);
+                _hContext = _contextFactory.Establish(SCardScope.System);
                 string[] szReaders = _hContext.GetReaders();
                 _hContext.Release();
 
@@ -207,9 +203,9 @@ namespace ThaiNationalIDCard
             catch (PCSCException ex)
             {
                 _error_code = ECODE_SCardError;
-                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
-                Console.WriteLine(_error_message);
-                return null;
+                _error_message = "GetReaders Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Debug.Print(_error_message);
+                throw ex;
             }
         }
 
@@ -218,16 +214,16 @@ namespace ThaiNationalIDCard
         {
             try
             {
-                // Establish SCard context
-                _hContext = new SCardContext();
-                _hContext.Establish(SCardScope.System);
+                // delay 1.5 second for ATR reading.
+                Thread.Sleep(1500);
 
-                // Create a _reader object using the existing context
+                _hContext = _contextFactory.Establish(SCardScope.System);
                 _reader = new SCardReader(_hContext);
 
                 // Connect to the card
-                if (readerName == null || readerName == String.Empty)
+                if (String.IsNullOrEmpty(readerName))
                 {
+                    // Open first avaliable reader.
                     // Retrieve the list of Smartcard _readers
                     string[] szReaders = _hContext.GetReaders();
                     if (szReaders.Length <= 0)
@@ -242,7 +238,7 @@ namespace ThaiNationalIDCard
                 else
                 {
                     _err = _reader.Connect(readerName,
-                                SCardShareMode.Exclusive,
+                                SCardShareMode.Shared,
                                 SCardProtocol.T0 | SCardProtocol.T1);
                     CheckErr(_err);
                 }
@@ -281,21 +277,35 @@ namespace ThaiNationalIDCard
                 
                 if (atr[0] == 0x3B && atr[1] == 0x68)       //Smart card tested with old type (Figure A.)
                 {
-                    _apdu = new APDU_THAILAND_IDCARD_3B68();
+                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
                 }
                 else if (atr[0] == 0x3B && atr[1] == 0x78)   //Smart card tested with new type (figure B.) 
                 {
-                    _apdu = new APDU_THAILAND_IDCARD_3B68();
+                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
+                }
+                else if (atr[0] == 0x3B && atr[1] == 0x79)   // add 2016-07-10
+                {
+                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
                 }
                 else if (atr[0] == 0x3B && atr[1] == 0x67)
                 {
-                    _apdu = new APDU_THAILAND_IDCARD_3B67();
+                    _apdu = new APDU_THAILAND_IDCARD_TYPE_01();
                 }
                 else
                 {
+                    // try unlisted card with TYPE 02
+                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
+                    
+                    // Check ID checksum
+                    SendCommand(_apdu.CMD_SELECT());
+                    if(Checksum(GetUTF8FromAsciiBytes(SendCommand(_apdu.CMD_CID()))))
+                    {
+                        return true;
+                    }
+
                     _error_code = ECODE_UNSUPPORT_CARD;
                     _error_message = "Card not support";
-                    Console.WriteLine(_error_message);
+                    Debug.Print(_error_message);
                     return false;
                 }
 
@@ -305,8 +315,8 @@ namespace ThaiNationalIDCard
             catch (PCSCException ex)
             {
                 _error_code = ECODE_SCardError;
-                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
-                Console.WriteLine(_error_message);
+                _error_message = "Open Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Debug.Print(_error_message);
                 return false;
             }
         }
@@ -315,22 +325,23 @@ namespace ThaiNationalIDCard
         {
             try
             {
+                _reader.Disconnect(SCardReaderDisposition.Leave);
                 _hContext.Release();
                 return true;
             }
             catch (PCSCException ex)
             {
                 _error_code = ECODE_SCardError;
-                _error_message = "Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
-                Console.WriteLine(_error_message);
+                _error_message = "Close Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
+                Debug.Print(_error_message);
                 return false;
             }
         }
 
-        public Personal readCitizenid()
+        public Personal readCitizenid(string readerName = null)
         {
             Personal personal = new Personal();
-            if (Open())
+            if (Open(readerName))
             {
                 // Send SELECT/RESET command
                 SendCommand(_apdu.CMD_SELECT());
@@ -381,6 +392,27 @@ namespace ThaiNationalIDCard
         public Personal readAllPhoto(string readerName = null)
         {
             return readAll(true, readerName);
+        }
+
+        public bool Checksum(string Citizenid)
+        {
+            int sum = 0;
+
+            if (Citizenid.Length != 13) return false;
+
+            for (int i = 0; i < 12; i++)
+            {
+                sum += Int32.Parse(Citizenid.Substring(i, 1)) * (13 - i);
+            }
+
+            if (((11 - (sum % 11)) % 10) == Int32.Parse(Citizenid.Substring(12, 1)))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
 
