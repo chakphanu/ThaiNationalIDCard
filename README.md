@@ -50,3 +50,10 @@ public void readCard()
 }            
 
 ```
+
+Donations
+==================
+
+Paypal: https://paypal.me/chakphanu
+
+Bitcoin: 1BwXyCEaDQ98DS8JUvHHPuxFAkfJXJrFYJ
