@@ -160,10 +160,10 @@ namespace ThaiNationalIDCard
             get
             {
                 var year = Convert.ToInt32(_issue_expire.Substring(8, 4)) - 543;
-				var month = Convert.ToInt32(_issue_expire.Substring(12, 2));
-				var day = Convert.ToInt32(_issue_expire.Substring(14, 2));
+                var month = Convert.ToInt32(_issue_expire.Substring(12, 2));
+                var day = Convert.ToInt32(_issue_expire.Substring(14, 2));
 
-				return new DateTime(year, month > 12 ? 12 : month, day > 31 ? 31 : day);
+                return new DateTime(year, month > 12 ? 12 : month, day > 31 ? 31 : day);
             }
         }
 
