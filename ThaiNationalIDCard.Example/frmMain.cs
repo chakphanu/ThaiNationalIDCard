@@ -73,10 +73,15 @@ namespace ThaiNationalIDCard.Example
                     LogLine(personal.addrTambol);
                     LogLine(personal.addrAmphur);
                     LogLine(personal.addrProvince);
+                    LogLine(personal.Issuer);
                 }
                 else if (idcard.ErrorCode() > 0)
                 {
                     MessageBox.Show(idcard.Error());
+                }
+                else
+                {
+                    MessageBox.Show("Catch all");
                 }
             }
             catch(Exception ex)
@@ -112,14 +117,20 @@ namespace ThaiNationalIDCard.Example
                 PhotoProgressBar1.Value = value;
             }
 
-            Refresh();
         }
 
 
         public void CardInserted(Personal personal)
         {
-            if (personal == null)
+            if (personal == null )
+            {
+                if(idcard.ErrorCode() > 0)
+                {
+                    MessageBox.Show(idcard.Error());
+                }
                 return;
+            }
+                
             lbl_cid.BeginInvoke(new MethodInvoker(delegate { lbl_cid.Text = personal.Citizenid; }));
             lbl_birthday.BeginInvoke(new MethodInvoker(delegate { lbl_birthday.Text = personal.Birthday.ToString("dd/MM/yyyy"); }));
             lbl_sex.BeginInvoke(new MethodInvoker(delegate { lbl_sex.Text = personal.Sex; }));

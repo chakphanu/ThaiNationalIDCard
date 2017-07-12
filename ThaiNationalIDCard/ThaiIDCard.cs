@@ -5,12 +5,11 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using PCSC;
+using PCSC.Iso7816;
 using System.Diagnostics;
 using System.Threading;
 
@@ -142,44 +141,57 @@ namespace ThaiNationalIDCard
                 Encoding.UTF8,
                 ascii_bytes
                 );
-            string result = System.Text.Encoding.UTF8.GetString(utf8);
-            return result.Substring(0, result.Length - 2);
+            return Encoding.UTF8.GetString(utf8);
         }
 
-        private byte[] SendCommand(byte[][] commands)
+        private bool SelectApplet()
+        {
+            byte[] command = _apdu.APDU_SELECT(_apdu.AID_MOI);
+            byte[] pbRecvBuffer;
+            pbRecvBuffer = new byte[256];
+            _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
+            CheckErr(_err);
+            var responseApdu = new ResponseApdu(pbRecvBuffer, IsoCase.Case2Short, _reader.ActiveProtocol);
+
+            if (responseApdu.SW1.Equals((byte)SW1Code.NormalDataResponse) || responseApdu.SW1.Equals((byte)SW1Code.Normal))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private byte[] SendCommand(byte [] command)
         {
             byte[] pbRecvBuffer;
             pbRecvBuffer = new byte[256];
-            foreach (byte[] command in commands)
+            _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
+            CheckErr(_err);
+            var responseApdu = new ResponseApdu(pbRecvBuffer, IsoCase.Case2Short, _reader.ActiveProtocol);
+
+            if(responseApdu.SW1.Equals((byte)SW1Code.NormalDataResponse))
             {
-                pbRecvBuffer = new byte[256];
+                command = _apdu.APDU_GET_RESPONSE().Concat(new byte[] { responseApdu.SW2 }).ToArray();
+                pbRecvBuffer = new byte[258];
                 _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
-                CheckErr(_err);
+                if(pbRecvBuffer.Length - responseApdu.SW2  == 2)
+                {
+                    return pbRecvBuffer.Take(pbRecvBuffer.Length - 2).ToArray();
+                }
             }
-            return pbRecvBuffer;
+
+            return pbRecvBuffer;        
         }
 
         private byte[] SendPhotoCommand()
         {
-            var s = new System.IO.MemoryStream();
-            CMD_PAIR[] cmds_photo = _apdu.GET_CMD_CARD_PHOTO();
+            var s = new MemoryStream();
+            byte[][] cmds_photo = _apdu.EF_CARD_PHOTO;
 
             for (int i = 0; i < cmds_photo.Length; i++)
             {
-                byte[] recv1 = new byte[256];
-                _err = _reader.Transmit(_pioSendPci, cmds_photo[i].CMD1, ref recv1);
-                CheckErr(_err);
-
-                if (recv1.Length > 0)
-                {
-                    byte[] recv2 = new byte[256];
-                    _err = _reader.Transmit(_pioSendPci, cmds_photo[i].CMD2, ref recv2);
-                    CheckErr(_err);
-                    //s.Write(recv2, 0, xwd);
-                    s.Write(recv2, 0, recv2.Length - 2);
-                }
-                if (eventPhotoProgress != null)
-                    eventPhotoProgress(i + 1, cmds_photo.Length);
+                s.Write(SendCommand(cmds_photo[i]), 0, SendCommand(cmds_photo[i]).Length);
+                eventPhotoProgress?.Invoke(i + 1, cmds_photo.Length);
             }
 
             s.Seek(0, SeekOrigin.Begin);
@@ -231,7 +243,7 @@ namespace ThaiNationalIDCard
                             "Could not find any Smartcard _reader.");
 
                     _err = _reader.Connect(szReaders[0],
-                                SCardShareMode.Exclusive,
+                                SCardShareMode.Shared,
                                 SCardProtocol.T0 | SCardProtocol.T1);
                     CheckErr(_err);
                 }
@@ -275,42 +287,29 @@ namespace ThaiNationalIDCard
                     return false;
                 }
                 
-                if (atr[0] == 0x3B && atr[1] == 0x68)       //Smart card tested with old type (Figure A.)
+                if (atr[0] == 0x3B && atr[1] == 0x67)
                 {
-                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
-                }
-                else if (atr[0] == 0x3B && atr[1] == 0x78)   //Smart card tested with new type (figure B.) 
-                {
-                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
-                }
-                else if (atr[0] == 0x3B && atr[1] == 0x79)   // add 2016-07-10
-                {
-                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
-                }
-                else if (atr[0] == 0x3B && atr[1] == 0x67)
-                {
+                    /* corruption card */
                     _apdu = new APDU_THAILAND_IDCARD_TYPE_01();
                 }
                 else
                 {
-                    // try unlisted card with TYPE 02
                     _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
-                    
-                    // Check ID checksum
-                    SendCommand(_apdu.CMD_SELECT());
-                    if(Checksum(GetUTF8FromAsciiBytes(SendCommand(_apdu.CMD_CID()))))
-                    {
-                        return true;
-                    }
+                }
 
+                // select MOI Applet
+                if (SelectApplet())
+                {
+                    return true;
+                }
+                else
+                {
                     _error_code = ECODE_UNSUPPORT_CARD;
-                    _error_message = "Card not support";
-                    Debug.Print(_error_message);
+                    _error_message = "SmartCard not support(Cannot select Ministry of Interior Applet.)";
                     return false;
                 }
 
-
-                return true;
+                
             }
             catch (PCSCException ex)
             {
@@ -343,11 +342,8 @@ namespace ThaiNationalIDCard
             Personal personal = new Personal();
             if (Open(readerName))
             {
-                // Send SELECT/RESET command
-                SendCommand(_apdu.CMD_SELECT());
-
                 // CID
-                personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.CMD_CID()));
+                personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CID));
 
                 Close();
                 return personal;
@@ -361,20 +357,21 @@ namespace ThaiNationalIDCard
             Personal personal = new Personal();
             if (Open(readerName))
             {
-                // Send SELECT/RESET command
-                SendCommand(_apdu.CMD_SELECT());
 
                 // CID
-                personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.CMD_CID()));
+                personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CID));
 
                 // Fullname Thai + Eng + BirthDate + Sex
-                personal.Info = GetUTF8FromAsciiBytes(SendCommand(_apdu.CMD_PERSON_INFO()));
+                personal.Info = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_PERSON_INFO));
 
                 // Address
-                personal.Address = GetUTF8FromAsciiBytes(SendCommand(_apdu.CMD_ADDRESS()));
+                personal.Address = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_ADDRESS));
 
                 // issue/expire
-                personal.Issue_Expire = GetUTF8FromAsciiBytes(SendCommand(_apdu.CMD_CARD_ISSUE_EXPIRE()));
+                personal.Issue_Expire = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CARD_ISSUE_EXPIRE));
+
+                // issuer
+                personal.Issuer = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CARD_ISSUER));
 
                 if (with_photo)
                 {
@@ -394,26 +391,6 @@ namespace ThaiNationalIDCard
             return readAll(true, readerName);
         }
 
-        public bool Checksum(string Citizenid)
-        {
-            int sum = 0;
-
-            if (Citizenid.Length != 13) return false;
-
-            for (int i = 0; i < 12; i++)
-            {
-                sum += Int32.Parse(Citizenid.Substring(i, 1)) * (13 - i);
-            }
-
-            if (((11 - (sum % 11)) % 10) == Int32.Parse(Citizenid.Substring(12, 1)))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
 
 
     } // End class

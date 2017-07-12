@@ -33,9 +33,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="pcsc-sharp, Version=3.5.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\ThaiNationalIDCard.Example\packages\PCSC.3.5.1\lib\net40\pcsc-sharp.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="pcsc-sharp, Version=3.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\PCSC.3.7.0\lib\net40\pcsc-sharp.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="System" />

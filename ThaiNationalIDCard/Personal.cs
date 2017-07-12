@@ -18,6 +18,7 @@ namespace ThaiNationalIDCard
         private string _personal;
         private string _address;
         private string _issue_expire;
+        private string _issuer;
         private string[] _th_personal;
         private string[] _en_personal;
 
@@ -234,5 +235,19 @@ namespace ThaiNationalIDCard
                 return _en_personal[3].Trim();
             }
         }
+
+        public string Issuer
+        {
+            get
+            {
+                return _issuer;
+            }
+            set
+            {
+                _issuer = value;
+            }
+        }
+
+
     }
 }
