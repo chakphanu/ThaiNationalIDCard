@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThaiNationalIDCard", "ThaiNationalIDCard\ThaiNationalIDCard.csproj", "{437C37AD-D733-46EC-8348-69B75F64B62F}"
 EndProject
@@ -11,16 +11,41 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		release-40|Any CPU = release-40|Any CPU
+		release-45|Any CPU = release-45|Any CPU
+		release-452|Any CPU = release-452|Any CPU
+		release-46|Any CPU = release-46|Any CPU
+		release-461|Any CPU = release-461|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{437C37AD-D733-46EC-8348-69B75F64B62F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{437C37AD-D733-46EC-8348-69B75F64B62F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{437C37AD-D733-46EC-8348-69B75F64B62F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{437C37AD-D733-46EC-8348-69B75F64B62F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-40|Any CPU.ActiveCfg = release-40|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-40|Any CPU.Build.0 = release-40|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-45|Any CPU.ActiveCfg = release-45|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-45|Any CPU.Build.0 = release-45|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-452|Any CPU.ActiveCfg = release-452|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-452|Any CPU.Build.0 = release-452|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-46|Any CPU.ActiveCfg = release-46|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-46|Any CPU.Build.0 = release-46|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-461|Any CPU.ActiveCfg = release-461|Any CPU
+		{437C37AD-D733-46EC-8348-69B75F64B62F}.release-461|Any CPU.Build.0 = release-461|Any CPU
 		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-40|Any CPU.ActiveCfg = release-40|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-40|Any CPU.Build.0 = release-40|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-45|Any CPU.ActiveCfg = release-45|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-45|Any CPU.Build.0 = release-45|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-452|Any CPU.ActiveCfg = release-452|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-452|Any CPU.Build.0 = release-452|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-46|Any CPU.ActiveCfg = release-46|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-46|Any CPU.Build.0 = release-46|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-461|Any CPU.ActiveCfg = release-461|Any CPU
+		{B66C0DCC-C04A-4058-80E0-3B21218642AF}.release-461|Any CPU.Build.0 = release-461|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
