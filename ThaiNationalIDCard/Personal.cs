@@ -187,6 +187,14 @@ namespace ThaiNationalIDCard
                 );
             }
         }
+        
+        public string BirthdayYearString
+        {
+            get
+            {
+                return (Convert.ToInt32(_personal.Substring(200, 4)) - 543).ToString();
+            }
+        }
 
         public string Sex
         {
