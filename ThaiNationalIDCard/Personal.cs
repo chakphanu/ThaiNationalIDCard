@@ -220,6 +220,14 @@ namespace ThaiNationalIDCard
             }
         }
 
+        public string Th_Middlename
+        {
+            get
+            {
+                return _th_personal[2].Trim();
+            }
+        }
+
         public string Th_Lastname
         {
             get
@@ -241,6 +249,13 @@ namespace ThaiNationalIDCard
             get
             {
                 return _en_personal[1].Trim();
+            }
+        }
+        public string En_Middlename
+        {
+            get
+            {
+                return _en_personal[2].Trim();
             }
         }
 
