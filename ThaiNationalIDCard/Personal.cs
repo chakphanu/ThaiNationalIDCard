@@ -168,6 +168,14 @@ namespace ThaiNationalIDCard
             }
         }
 
+        public string ExpireString
+        {
+            get
+            {
+                return Expire.ToString("yyyyMMdd");
+            }
+        }
+
         public DateTime Birthday 
         {
             get
