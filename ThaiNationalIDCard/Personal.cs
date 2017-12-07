@@ -168,6 +168,14 @@ namespace ThaiNationalIDCard
             }
         }
 
+        public string ExpireString
+        {
+            get
+            {
+                return Expire.ToString("yyyyMMdd");
+            }
+        }
+
         public DateTime Birthday 
         {
             get
@@ -177,6 +185,14 @@ namespace ThaiNationalIDCard
                 Convert.ToInt32(_personal.Substring(204, 2)),
                 Convert.ToInt32(_personal.Substring(206, 2))
                 );
+            }
+        }
+        
+        public string BirthdayYearString
+        {
+            get
+            {
+                return (Convert.ToInt32(_personal.Substring(200, 4)) - 543).ToString();
             }
         }
 
@@ -204,6 +220,14 @@ namespace ThaiNationalIDCard
             }
         }
 
+        public string Th_Middlename
+        {
+            get
+            {
+                return _th_personal[2].Trim();
+            }
+        }
+
         public string Th_Lastname
         {
             get
@@ -225,6 +249,13 @@ namespace ThaiNationalIDCard
             get
             {
                 return _en_personal[1].Trim();
+            }
+        }
+        public string En_Middlename
+        {
+            get
+            {
+                return _en_personal[2].Trim();
             }
         }
 
