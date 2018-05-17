@@ -1,7 +1,7 @@
 ﻿/* BSD license
  * Credit:  APDU Command from Mr.Manoi http://hosxp.net/index.php?option=com_smf&topic=22496
  * Require add reference: PresentationCore, System.Xaml, WindowsBase
- * Require add refrernce(Nuget): PCSC ( http://www.nuget.org/packages/PCSC/ )
+ * Require add refrernce(Nuget): PCSC ( http://www.nuget.org/packages/PCSC/ ) and PCSC.Iso7816 ( https://www.nuget.org/packages/PCSC.Iso7816/ )
  */
 
 using System;
@@ -12,6 +12,9 @@ using PCSC;
 using PCSC.Iso7816;
 using System.Diagnostics;
 using System.Threading;
+using PCSC.Monitoring;
+using PCSC.Exceptions;
+using PCSC.Utils;
 
 namespace ThaiNationalIDCard
 {
@@ -264,6 +267,9 @@ namespace ThaiNationalIDCard
                         break;
                     case SCardProtocol.T1:
                         _pioSendPci = SCardPCI.T1;
+                        break;
+                    case SCardProtocol.Raw:
+                        _pioSendPci = SCardPCI.Raw;
                         break;
                     default:
                         throw new PCSCException(SCardError.ProtocolMismatch,
