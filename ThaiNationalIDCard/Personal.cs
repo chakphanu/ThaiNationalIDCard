@@ -180,11 +180,16 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return new DateTime(
-                Convert.ToInt32(_personal.Substring(200, 4)) - 543,
-                Convert.ToInt32(_personal.Substring(204, 2)),
-                Convert.ToInt32(_personal.Substring(206, 2))
-                );
+                var dateNow = DateTime.Now;
+                int year, month, day;
+                year = Convert.ToInt32(_personal.Substring(200, 4));
+                year = year > 0 ? year - 543 : dateNow.Year;
+                month = Convert.ToInt32(_personal.Substring(204, 2));
+                month = month > 0 ? month : 1;
+                day = Convert.ToInt32(_personal.Substring(206, 2));
+                day = day > 0 ? day : 1;
+
+                return new DateTime(year, month, day);
             }
         }
         
