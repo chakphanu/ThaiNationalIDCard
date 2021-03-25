@@ -1,3 +1,8 @@
+This repo is not maintained.
+==================
+Please checkout new fork at: https://github.com/dotnetthailand/ThaiNationalIDCard
+
+
 ThaiNationalIDCard
 ==================
 
