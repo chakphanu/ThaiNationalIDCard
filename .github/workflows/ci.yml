@@ -1,0 +1,72 @@
+name: ci
+
+# release/2.x maintenance line: build, test and pack only. No publish step, no secrets.
+on:
+  push:
+    branches: [ "release/2.x" ]
+  pull_request:
+    branches: [ "release/2.x" ]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  windows:
+    name: windows (build all targets, test, pack)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: Restore
+        run: dotnet restore ThaiNationalIDCard.sln
+
+      # Builds net40, net45, net452, net46, net461 (library), the net461 example and the net8.0 tests.
+      - name: Build (Release)
+        run: dotnet build ThaiNationalIDCard.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/ThaiNationalIDCard.Tests/ThaiNationalIDCard.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Pack
+        run: dotnet pack ThaiNationalIDCard/ThaiNationalIDCard.csproj -c Release --no-build -o artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: tests/ThaiNationalIDCard.Tests/TestResults/*.trx
+          if-no-files-found: ignore
+
+  linux-build:
+    name: ubuntu (library build cross-check)
+    runs-on: ubuntu-latest
+    env:
+      EnableWindowsTargeting: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      # Build only: the .NET Framework targets compile against reference assemblies but cannot run here.
+      - name: Build library (Release, all targets)
+        run: dotnet build ThaiNationalIDCard/ThaiNationalIDCard.csproj -c Release
