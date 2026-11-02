@@ -1,0 +1,32 @@
+# APDU sequence sent by release/2.x commit c488da3: readAll(with_photo: true), reader answering data + 90 00 on the first transmit.
+# It states what the old code sends, not what a card requires. Nothing here was captured on a card.
+# Order in ThaiIDCard.readAll: SELECT, CID, person info, address, issue/expire, issuer, photo chunks.
+# SendCommand sends GET RESPONSE with SW2, so this assumes no 61 xx is ever seen, so no GET RESPONSE is sent.
+# SELECT is not followed by GET RESPONSE in 2.x. Photo is one transmit per chunk (the fix in 2.x).
+# c488da3 already sends issue/expire with Le 10, so that is NOT a difference between 2.x and v3.
+00a4040008a000000054480001
+80b0000402000d
+80b000110200d1
+80b01579020064
+80b00167020010
+80b000f6020064
+80b0017b0200ff
+80b0027a0200ff
+80b003790200ff
+80b004780200ff
+80b005770200ff
+80b006760200ff
+80b007750200ff
+80b008740200ff
+80b009730200ff
+80b00a720200ff
+80b00b710200ff
+80b00c700200ff
+80b00d6f0200ff
+80b00e6e0200ff
+80b00f6d0200ff
+80b0106c0200ff
+80b0116b0200ff
+80b0126a0200ff
+80b013690200ff
+80b014680200ff

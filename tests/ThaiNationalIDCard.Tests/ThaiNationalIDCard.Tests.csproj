@@ -22,6 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Golden APDU sequences: data derived from the 2.x code, not from a card. -->
+    <EmbeddedResource Include="Golden\*.apdu" LogicalName="Golden.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\ThaiNationalIDCard\ThaiNationalIDCard.csproj" />
   </ItemGroup>
 

@@ -90,3 +90,6 @@ dotnet_naming_rule.type_parameters_rule.severity = suggestion
 [tests/**.cs]
 # Test method names may use underscores (Method_Condition_Result).
 dotnet_diagnostic.CA1707.severity = none
+# Tests favour readable inline expected values and First/Last over these micro optimizations.
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1826.severity = none

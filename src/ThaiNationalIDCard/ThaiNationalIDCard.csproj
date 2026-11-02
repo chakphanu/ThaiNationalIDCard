@@ -12,6 +12,8 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <!-- TODO(phase 3-4): legacy analyzer findings stay visible as warnings but do not fail CI builds. Remove as they are fixed. -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);CA1001;CA1305;CA1707;CA1822;CA1824;CA1852;CA1859;CA2200</WarningsNotAsErrors>
+    <!-- ThrowIfNull and ThrowIf do not exist on netstandard2.0, which this library also targets. -->
+    <NoWarn>$(NoWarn);CA1510;CA1513</NoWarn>
   </PropertyGroup>
 
   <!-- NuGet package metadata -->
