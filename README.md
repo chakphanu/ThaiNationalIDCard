@@ -1,34 +1,33 @@
 # ThaiNationalIDCard
 
-A .NET library that reads a Thai national ID card through PC/SC, and lets the caller choose how much to read.
+ไลบรารี .NET สำหรับอ่านบัตรประจำตัวประชาชนไทยผ่าน PC/SC โดยผู้เรียกใช้เลือกได้ว่าจะอ่านข้อมูลมากน้อยเพียงใด
 
-## Status
+## สถานะ
 
-**3.0.0-preview. Not tested on a real card.** There is no reader or card behind this project yet. The read sequence, the
-field layout and the error handling come from public code and from reasoning about it. The tests run against a simulator,
-so they show the code matches those assumptions and not that the assumptions are right. Versions stay at
-`3.0.0-preview.N` until real cards have confirmed them, and this README makes no claim about which cards or readers work.
-You can help: see [Diagnostics](#diagnostics).
+**3.0.0-preview ยังไม่เคยทดสอบกับบัตรจริง** โปรเจกต์นี้ยังไม่มีเครื่องอ่านหรือบัตรสำหรับทดสอบ ลำดับการอ่าน โครงสร้าง field และการจัดการข้อผิดพลาดมาจากโค้ดสาธารณะและการให้เหตุผลจากโค้ดนั้น การทดสอบรันกับตัวจำลอง จึงแสดงได้ว่าโค้ดตรงกับสมมติฐาน ไม่ได้แสดงว่าสมมติฐานถูกต้อง เวอร์ชันจะอยู่ที่ `3.0.0-preview.N` จนกว่าบัตรจริงจะยืนยันสมมติฐานเหล่านั้น และ README นี้ไม่ได้อ้างว่าใช้ได้กับบัตรหรือเครื่องอ่านรุ่นใด คุณช่วยได้: ดู[การวินิจฉัย](#การวินิจฉัย)
 
-| Line | Branch | For |
+| สาย | Branch | สำหรับ |
 |---|---|---|
 | 3.x preview | `v3` | `net10.0`, `net8.0`, `netstandard2.0` |
-| 2.x | [`release/2.x`](https://github.com/chakphanu/ThaiNationalIDCard/tree/release/2.x) | Compatibility with .NET Framework 4.0 to 4.6.1. Bug fixes only. |
+| 2.x | [`release/2.x`](https://github.com/chakphanu/ThaiNationalIDCard/tree/release/2.x) | ความเข้ากันได้กับ .NET Framework 4.0 ถึง 4.6.1 แก้บั๊กเท่านั้น |
 
-v3 is a breaking rewrite: see the
-[migration guide](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/migration-v2-to-v3.md).
+v3 เขียนใหม่และมี breaking change: ดู[คู่มือการย้ายเวอร์ชัน](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/migration-v2-to-v3.md)
 
-## Install
+.NET 8 จะหมดระยะการสนับสนุนในวันที่ 10 พฤศจิกายน 2026
 
-Nothing of v3 is on NuGet yet, so for now add a project reference to `src/ThaiNationalIDCard`. Once a preview is published:
+Repository นี้เลิกสถานะ archive เมื่อวันที่ 2 พฤศจิกายน 2026 ยังไม่มีการเผยแพร่แพ็กเกจรุ่น 2.0.1 หรือ 3.x และยังไม่ได้เผยแพร่ `thaiid-diagnose`
+
+## การติดตั้ง
+
+v3 ยังไม่มีบน NuGet ตอนนี้จึงต้องเพิ่ม project reference ไปที่ `src/ThaiNationalIDCard` เมื่อเผยแพร่ preview แล้วจึงใช้คำสั่งนี้ได้:
 
 ```
 dotnet add package ThaiNationalIDCard --version 3.0.0-preview.1
 ```
 
-## Quick start: public mode
+## เริ่มต้นใช้งาน: โหมด public
 
-Public is the default. It reads the fields below and nothing else, and the photo only when asked for.
+ค่าเริ่มต้นคือโหมด public ซึ่งอ่านเฉพาะ field ด้านล่างเท่านั้น และอ่านรูปถ่ายเมื่อขอเท่านั้น
 
 ```csharp
 using ThaiNationalIDCard;
@@ -51,16 +50,15 @@ if (card.Quality.CitizenId == FieldQuality.Ok && card.IsValidCitizenId)
 }
 ```
 
-- A value is what the card gave. `card.Quality` says per field whether it is `Ok`, `Suspect`, `Failed` or `NotRead`.
-- `ThaiCardDate` keeps `Raw`, and `Year`, `Month` and `Day` are null when the card holds `00` or `0000`. Nothing is filled in.
-  `ExpiryDate.IsLifetime` is true for `99999999`.
-- `IsValidCitizenId` checks length, digits and the check digit, and nothing more.
-- `ToString()` on these types and exception messages never hold card data, so logging them cannot leak it.
-- `ReadAsync` holds a thread pool thread for the whole read, as PC/SC is blocking.
+- ค่าที่ได้คือสิ่งที่บัตรส่งมา `card.Quality` บอกสถานะของแต่ละ field ว่าเป็น `Ok`, `Suspect`, `Failed` หรือ `NotRead`
+- `ThaiCardDate` เก็บ `Raw` ไว้ ส่วน `Year`, `Month` และ `Day` เป็น null เมื่อบัตรเก็บค่า `00` หรือ `0000` ไลบรารีไม่เติมค่าให้ `ExpiryDate.IsLifetime` เป็น true เมื่อค่าคือ `99999999`
+- `IsValidCitizenId` ตรวจความยาว ตัวเลข และเลขตรวจสอบ ไม่ได้ตรวจอย่างอื่น
+- `ToString()` ของ type เหล่านี้และข้อความของ exception ไม่มีข้อมูลบัตร การ log ค่าเหล่านี้จึงไม่ทำให้ข้อมูลบัตรรั่ว
+- `ReadAsync` ใช้ thread pool thread ตลอดการอ่าน เพราะ PC/SC เป็นการเรียกแบบ blocking
 
-## Quick start: private mode
+## เริ่มต้นใช้งาน: โหมด private
 
-Private mode is a separate, explicit choice. Read the [consent section](#consent-and-legal) first.
+โหมด private เป็นทางเลือกแยกต่างหากที่ต้องระบุเอง อ่าน[หัวข้อความยินยอม](#ความยินยอมและกฎหมาย)ก่อน
 
 ```csharp
 ThaiIdCardData full = await reader.ReadAsync(
@@ -73,14 +71,11 @@ FieldQuality laserQuality = extra.LaserIdQuality;
 byte[]? raw0177 = extra.MoiRaw0177.GetBytes();
 ```
 
-Values whose meaning public sources disagree on are raw bytes named by position, such as `MoiRaw0177`. A private field that
-fails, or an applet the card does not have, shows up as that field's quality and costs the public fields nothing.
-[docs/privacy.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md) lists every field.
+ค่าที่แหล่งข้อมูลสาธารณะตีความไม่ตรงกันจะเป็นไบต์ดิบและตั้งชื่อตามตำแหน่ง เช่น `MoiRaw0177` ถ้า field ในโหมด private อ่านไม่สำเร็จ หรือบัตรไม่มี applet นั้น จะแสดงเป็น quality ของ field นั้นเท่านั้น และไม่กระทบ field ของโหมด public [docs/privacy.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md) มีรายการ field ทั้งหมด
 
-## Monitor
+## การเฝ้าดูเครื่องอ่าน
 
-`ThaiIdCardMonitor` watches any number of readers and only notifies. It never connects to a card, so reading stays a decision
-of your code. Events carry the reader name.
+`ThaiIdCardMonitor` เฝ้าดูเครื่องอ่านกี่เครื่องก็ได้ และทำหน้าที่แจ้งเตือนเท่านั้น ไม่เคยเชื่อมต่อกับบัตร การอ่านจึงเป็นการตัดสินใจของโค้ดของคุณ ทุก event มีชื่อเครื่องอ่าน
 
 ```csharp
 using var monitor = new ThaiIdCardMonitor(reader.GetReaderNames());
@@ -90,85 +85,76 @@ monitor.MonitorError += (sender, e) => ReportProblem(e.ReaderName, e.Failure);
 monitor.Start();
 ```
 
-Events arrive on a thread pool thread, one at a time. A UI has to marshal them itself, for example with `Control.BeginInvoke`.
-An exception from a handler is dropped, so catch your own. A card already in the reader at `Start()` raises `CardInserted`
-too. A reader plugged in later is not noticed until `Start()` runs again.
+Event มาบน thread pool thread ทีละตัว UI ต้อง marshal เอง เช่น ด้วย `Control.BeginInvoke` Exception จาก handler จะถูกทิ้ง จึงต้องดักจับเอง บัตรที่อยู่ในเครื่องอ่านตอนเรียก `Start()` ก็ทำให้เกิด `CardInserted` เช่นกัน เครื่องอ่านที่เสียบภายหลังจะยังไม่ถูกเฝ้าดูจนกว่าจะเรียก `Start()` อีกครั้ง
 
-## Errors
+พฤติกรรมเหล่านี้ทดสอบกับตัวจำลองเท่านั้น ยังไม่เคยรันกับเครื่องอ่านจริง
 
-| Exception | Meaning |
+## ข้อผิดพลาด
+
+| Exception | ความหมาย |
 |---|---|
-| `SmartCardServiceUnavailableException` | No PC/SC service. `NativeLibraryMissing` tells when the native library could not load. |
-| `ReaderNotFoundException` | No reader, or not the one named. |
-| `CardNotPresentException` | The reader holds no usable card. |
-| `CardRemovedException` | The card left during the read. |
-| `UnsupportedCardException` | The reader cannot talk to the card, or the card refused the applet. |
-| `UnknownReadBehaviourException` | No citizen ID came back with any allowed attempt. The trace is what the next release needs. |
-| `CardCommunicationException` | Any other failure. `Failure` tells which, `StatusWord` gives the status when there was one. |
-| `ReadCanceledException` | The read was cancelled. It is an `OperationCanceledException`. |
+| `SmartCardServiceUnavailableException` | ไม่มีบริการ PC/SC `NativeLibraryMissing` บอกว่าโหลด native library ไม่ได้หรือไม่ |
+| `ReaderNotFoundException` | ไม่มีเครื่องอ่าน หรือไม่มีเครื่องที่ระบุชื่อ |
+| `CardNotPresentException` | เครื่องอ่านไม่มีบัตรที่ใช้ได้ |
+| `CardRemovedException` | บัตรถูกดึงออกระหว่างการอ่าน |
+| `UnsupportedCardException` | เครื่องอ่านสื่อสารกับบัตรไม่ได้ หรือบัตรปฏิเสธ applet |
+| `UnknownReadBehaviourException` | ไม่ได้เลขประจำตัวประชาชนจากความพยายามทุกครั้งที่อนุญาต trace นี้คือสิ่งที่รุ่นถัดไปต้องการ |
+| `CardCommunicationException` | ความล้มเหลวอื่น ๆ `Failure` บอกว่าเป็นแบบใด `StatusWord` ให้สถานะเมื่อมี |
+| `ReadCanceledException` | การอ่านถูกยกเลิก เป็น `OperationCanceledException` |
 
-All but the last derive from `ThaiIdCardException`. `Diagnostics` on the exception and on the result holds the trace: status
-words, lengths and pass or fail, with no card data.
+ทุกตัวยกเว้นตัวสุดท้ายสืบทอดจาก `ThaiIdCardException` `Diagnostics` บน exception และบนผลลัพธ์เก็บ trace ได้แก่ status word ความยาว และผ่านหรือไม่ผ่าน โดยไม่มีข้อมูลบัตร
 
-## Platforms
+## แพลตฟอร์ม
 
-The package uses [PCSC](https://www.nuget.org/packages/PCSC) over the PC/SC service of the system. Only the Linux test suite
-and the build were run during development, always without a reader, and none of the below says anything about a card.
+แพ็กเกจนี้ใช้ [PCSC](https://www.nuget.org/packages/PCSC) ผ่านบริการ PC/SC ของระบบ
 
-| OS | What it needs |
+CI ผ่านบน Windows และ Ubuntu ที่คอมมิต `573c999` โดยรันการทดสอบบน `net10.0` และ `net8.0` และบน `net48` เมื่อรันบน Windows CI ใช้ตัวจำลองและไม่มีเครื่องอ่าน การที่ CI ผ่านจึงไม่ใช่หลักฐานด้านฮาร์ดแวร์ และตารางด้านล่างไม่ได้บอกอะไรเกี่ยวกับบัตร
+
+| OS | สิ่งที่ต้องมี |
 |---|---|
-| Windows | `winscard.dll` is part of Windows. The Smart Card service has to be running: `net start SCardSvr`. |
-| Linux | `pcscd` and libpcsclite: `sudo apt install pcscd libpcsclite1` (Debian, Ubuntu) or `sudo dnf install pcsc-lite` (Fedora), then `sudo systemctl start pcscd`. |
-| macOS | The PCSC package calls the system `PCSC.framework`, so nothing extra should be needed. It has not been run on macOS. |
+| Windows | `winscard.dll` เป็นส่วนหนึ่งของ Windows บริการ Smart Card ต้องทำงานอยู่: `net start SCardSvr` |
+| Linux | `pcscd` และ libpcsclite: `sudo apt install pcscd libpcsclite1` (Debian, Ubuntu) หรือ `sudo dnf install pcsc-lite` (Fedora) จากนั้น `sudo systemctl start pcscd` |
+| macOS | แพ็กเกจ PCSC เรียก `PCSC.framework` ของระบบ จึงน่าจะไม่ต้องติดตั้งอะไรเพิ่ม แต่ยังไม่เคยรันบน macOS |
 
-`ThaiNationalIDCard.Windows` is a small Windows-only package that turns `GetPhoto()` bytes into a `System.Drawing.Image` or a
-WPF `BitmapSource`, with `card.GetPhoto()?.ToImage()` and `card.GetPhoto()?.ToBitmapSource()`.
+`ThaiNationalIDCard.Windows` เป็นแพ็กเกจเล็ก ๆ สำหรับ Windows เท่านั้น แปลงไบต์จาก `GetPhoto()` เป็น `System.Drawing.Image` หรือ WPF `BitmapSource` ด้วย `card.GetPhoto()?.ToImage()` และ `card.GetPhoto()?.ToBitmapSource()`
 
-Samples are in `samples/`, with no real data: `ConsoleSample` runs anywhere and masks the citizen ID by default, and
-`WinFormsSample` shows the monitor, marshalling, the photo and private mode as an opt-in.
+ตัวอย่างอยู่ใน `samples/` โดยไม่มีข้อมูลจริง: `ConsoleSample` (`net10.0`) ไม่ผูกกับ OS และปิดบังเลขประจำตัวประชาชนเป็นค่าเริ่มต้น ส่วน `WinFormsSample` (`net10.0-windows`) แสดงการใช้ monitor, การ marshal, รูปถ่าย และโหมด private แบบต้องเลือกเปิดเอง
 
-## Diagnostics
+## การวินิจฉัย
 
-`thaiid-diagnose` reads a card and prints what happened: status words, lengths, the P2 used and pass or fail per field. It has
-no option that prints card data. This output is what moves the project past preview.
+`thaiid-diagnose` อ่านบัตรแล้วพิมพ์สิ่งที่เกิดขึ้น ได้แก่ status word ความยาว ค่า P2 ที่ใช้ และผ่านหรือไม่ผ่านของแต่ละ field เครื่องมือนี้ไม่มีตัวเลือกที่พิมพ์ข้อมูลบัตร ผลลัพธ์นี้คือสิ่งที่จะทำให้โปรเจกต์ออกจากสถานะ preview ได้ เครื่องมือยังไม่เผยแพร่ จึงต้องรันจาก repository นี้
 
 ```
 dotnet run --project tools/ThaiNationalIDCard.Diagnose -c Release -- --mode public
 ```
 
-Use it only on your own card or with the holder's consent. What to run and what to send back is in
-[docs/hardware-test.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/hardware-test.md).
+ใช้กับบัตรของตัวเองหรือเมื่อผู้ถือบัตรยินยอมเท่านั้น สิ่งที่ต้องรันและสิ่งที่ต้องส่งกลับอยู่ใน [docs/hardware-test.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/hardware-test.md)
 
-## Consent and legal
+## ความยินยอมและกฎหมาย
 
-*Written November 2026. This is not legal advice and it has not been reviewed by a lawyer.*
+*เขียนเมื่อพฤศจิกายน 2026 ข้อความนี้ไม่ใช่คำแนะนำทางกฎหมาย และยังไม่ผ่านการตรวจจากทนายความ*
 
-- **You are responsible for consent.** This library is a tool in between. By the decision of the project owner, the people who
-  use it are responsible for the holder's consent and for the law that applies, and they choose the mode for each read.
-- Section 12 of the Thai Identity Card Act sets criminal penalties for accessing or disclosing data in the card memory, other
-  than the general data shown on the card, without the holder's consent. The PDPA may apply as well, and its section 26 names
-  religion and health data as sensitive.
-- **Reading a card is not proof of identity.** A successful read and a valid check digit show that a card answered. The library
-  has no `IsVerified` or `IsGenuine`, on purpose.
-- PIN and VERIFY commands, fingerprint commands, write commands and some chip areas are refused in every mode, by a guard
-  under the read logic.
+- **คุณเป็นผู้รับผิดชอบเรื่องความยินยอม** ไลบรารีนี้เป็นเครื่องมือตัวกลาง ตามการตัดสินใจของเจ้าของโปรเจกต์ ผู้ที่นำไปใช้เป็นผู้รับผิดชอบความยินยอมของผู้ถือบัตรและกฎหมายที่เกี่ยวข้อง และเป็นผู้เลือกโหมดในการอ่านแต่ละครั้ง จุดยืนนี้เป็นการตัดสินใจของโปรเจกต์ ไม่ใช่ข้อสรุปทางกฎหมาย
+- พ.ร.บ.บัตรประจำตัวประชาชน พ.ศ. 2526 มาตรา 12 กำหนดโทษอาญาสำหรับการเข้าถึงหรือเปิดเผยข้อมูลในหน่วยความจำของบัตร ที่ไม่ใช่ข้อมูลทั่วไปที่ปรากฏบนบัตร โดยไม่ได้รับความยินยอมจากผู้ถือบัตร พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 อาจใช้บังคับด้วย และมาตรา 26 ระบุว่าข้อมูลศาสนาและสุขภาพเป็นข้อมูลอ่อนไหว
+- โหมด public อยู่ตรงไหนเมื่อเทียบกับเส้นแบ่งตามมาตรา 12 เป็นการอนุมาน ไม่ใช่ข้อค้นพบ
+- **การอ่านบัตรไม่ใช่การพิสูจน์ตัวตน** การอ่านสำเร็จและเลขตรวจสอบถูกต้องแสดงเพียงว่ามีบัตรตอบกลับ ไลบรารีตั้งใจไม่มี `IsVerified` หรือ `IsGenuine`
+- คำสั่ง PIN และ VERIFY คำสั่งลายนิ้วมือ คำสั่งเขียน และบางพื้นที่ของชิป ถูกปฏิเสธในทุกโหมดโดย guard ที่อยู่ใต้ตรรกะการอ่าน
 
-The citations and what is still open are in
-[docs/privacy.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md).
+แหล่งอ้างอิงและประเด็นที่ยังเปิดอยู่มีใน [docs/privacy.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md)
 
-## Documentation
+## เอกสาร
 
-- [Architecture](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/architecture.md)
-- [Migration from 2.x](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/migration-v2-to-v3.md)
-- [Privacy and law](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md)
-- [Hardware test](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/hardware-test.md)
-- [Changelog](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/CHANGELOG.md)
+- [สถาปัตยกรรม](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/architecture.md)
+- [การย้ายจาก 2.x](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/migration-v2-to-v3.md)
+- [ความเป็นส่วนตัวและกฎหมาย](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md)
+- [การทดสอบกับฮาร์ดแวร์](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/hardware-test.md)
+- [ประวัติการเปลี่ยนแปลง](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/CHANGELOG.md)
+- [คำสั่ง APDU](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/APDU.md)
 
-## Credit
+## เครดิต
 
-- The original APDU commands came from Mr.Manoi: <http://hosxp.net/index.php?option=com_smf&topic=22496>
-- The 3B 78 card type came from the [kolry wiki](https://github.com/kolry/ThaiNationalIDCard/wiki/_pages).
-- With thanks to the .NET Thailand community, and their fork at
-  [dotnetthailand/ThaiNationalIDCard](https://github.com/dotnetthailand/ThaiNationalIDCard).
+- คำสั่ง APDU ชุดแรกมาจาก Mr.Manoi: <http://hosxp.net/index.php?option=com_smf&topic=22496>
+- บัตรประเภท 3B 78 มาจาก [kolry wiki](https://github.com/kolry/ThaiNationalIDCard/wiki/_pages)
+- ขอบคุณชุมชน .NET Thailand และ fork ของพวกเขาที่ [dotnetthailand/ThaiNationalIDCard](https://github.com/dotnetthailand/ThaiNationalIDCard)
 
-BSD 2-Clause license: see [LICENSE](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/LICENSE).
+สัญญาอนุญาต BSD 2-Clause: ดู [LICENSE](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/LICENSE)

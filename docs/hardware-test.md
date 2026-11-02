@@ -1,123 +1,105 @@
-# Hardware test
+# การทดสอบกับฮาร์ดแวร์
 
-**Nothing in this project has been tested on real hardware yet.** Every read sequence, status word, P2 rule and field
-layout in v3 comes from public code and from reasoning about it. The test suite runs against a simulator, so it shows
-that the logic matches its assumptions and not that the assumptions are right. v3 stays at `3.0.0-preview.N` until a real
-card and reader have confirmed them. The same goes for `ThaiIdCardMonitor`, the `ThaiNationalIDCard.Windows` helpers and both
-samples: none of them has seen a reader, a card or a real photo.
+**ยังไม่มีส่วนใดของโปรเจกต์นี้เคยทดสอบกับฮาร์ดแวร์จริง** ลำดับการอ่าน status word กฎ P2 และโครงสร้าง field ทั้งหมดใน v3 มาจากโค้ดสาธารณะและการให้เหตุผลจากโค้ดนั้น ชุดทดสอบรันกับตัวจำลอง จึงแสดงว่าตรรกะตรงกับสมมติฐาน ไม่ได้แสดงว่าสมมติฐานถูกต้อง v3 จะอยู่ที่ `3.0.0-preview.N` จนกว่าบัตรและเครื่องอ่านจริงจะยืนยัน ข้อนี้ใช้กับ `ThaiIdCardMonitor`, helper ของ `ThaiNationalIDCard.Windows` และตัวอย่างทั้งสองด้วย: ไม่มีตัวใดเคยเจอเครื่องอ่าน บัตร หรือรูปถ่ายจริง
 
-`thaiid-diagnose` exists to collect that evidence. It reads a card and prints what happened, with no card content.
+`thaiid-diagnose` มีไว้เก็บหลักฐานนั้น เครื่องมือนี้อ่านบัตรแล้วพิมพ์สิ่งที่เกิดขึ้น โดยไม่มีเนื้อหาจากบัตร
 
-## Before you run it
+## ก่อนรัน
 
-- Use it only on your own card, or on a card whose holder has agreed. The tool prints this notice too and does not ask
-  for confirmation, because it also has to run unattended.
-- `--mode private` reads extra areas of the chip. Public sources disagree on what they hold, and they may include
-  sensitive data. Thai law (Section 12 of the Identity Card Act, and the PDPA) may apply to reading them without consent.
-  This was noted from project research on 2026-11-02, has not been reviewed by a lawyer, and is not legal advice. See
-  `docs/privacy.md`.
-- The tool never sends a PIN or VERIFY command, never reads the fingerprint areas and never writes. A guard below the
-  read logic refuses those commands in every mode.
-- If the first P2 value fails, the tool re-selects and reads once more with the other value. No public source reports
-  side effects from this, but no public source tested it either. For a first try, prefer an expired card whose holder
-  accepts that risk.
+- ใช้กับบัตรของตัวเอง หรือบัตรที่ผู้ถือยินยอมเท่านั้น เครื่องมือจะพิมพ์ข้อความแจ้งนี้ด้วยและไม่ถามยืนยัน เพราะต้องรันแบบไม่มีคนเฝ้าได้
+- `--mode private` อ่านพื้นที่เพิ่มเติมของชิป แหล่งข้อมูลสาธารณะตีความไม่ตรงกันว่าพื้นที่เหล่านั้นเก็บอะไร และอาจมีข้อมูลอ่อนไหว กฎหมายไทย (พ.ร.บ.บัตรประจำตัวประชาชน พ.ศ. 2526 มาตรา 12 และ พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562) อาจใช้บังคับกับการอ่านโดยไม่ได้รับความยินยอม ข้อความนี้บันทึกจากการวิจัยของโปรเจกต์เมื่อ 2026-11-02 ยังไม่ผ่านการตรวจจากทนายความ และไม่ใช่คำแนะนำทางกฎหมาย ดู `docs/privacy.md`
+- เครื่องมือนี้ไม่ส่งคำสั่ง PIN หรือ VERIFY ไม่อ่านพื้นที่ลายนิ้วมือ และไม่เขียน guard ใต้ตรรกะการอ่านปฏิเสธคำสั่งเหล่านั้นในทุกโหมด
+- ถ้า P2 ค่าแรกล้มเหลว เครื่องมือจะ SELECT ใหม่แล้วอ่านอีกครั้งด้วยอีกค่าหนึ่ง ไม่มีแหล่งข้อมูลสาธารณะรายงานผลข้างเคียงของการทำเช่นนี้ แต่ก็ไม่มีแหล่งใดทดสอบเช่นกัน สำหรับการลองครั้งแรก ควรใช้บัตรหมดอายุที่ผู้ถือยอมรับความเสี่ยงนี้
 
-## Run it
+## วิธีรัน
 
-Linux needs the PC/SC service: `sudo apt install pcscd libpcsclite1` (Debian, Ubuntu) or `sudo dnf install pcsc-lite`
-(Fedora), then `sudo systemctl start pcscd`. Windows has it built in. macOS has a system PC/SC framework that the PCSC package
-calls, and the tool has not been run there. Nothing is published yet, so build it from this repository for now.
+Linux ต้องมีบริการ PC/SC: `sudo apt install pcscd libpcsclite1` (Debian, Ubuntu) หรือ `sudo dnf install pcsc-lite` (Fedora) จากนั้น `sudo systemctl start pcscd` Windows มีมาในตัว macOS มี framework PC/SC ของระบบที่แพ็กเกจ PCSC เรียกใช้ และยังไม่เคยรันเครื่องมือบน macOS ตอนนี้ยังไม่ได้เผยแพร่อะไร จึงต้อง build จาก repository นี้
 
-With a .NET 10 SDK:
+เมื่อมี .NET 10 SDK:
 
 ```
 dotnet run --project tools/ThaiNationalIDCard.Diagnose -c Release -- --mode public
 ```
 
-`dotnet tool` also needs an SDK. For a machine without one, publish a self-contained binary on any machine with the SDK,
-to a folder outside the repository, and copy the one binary over:
+`dotnet tool` ก็ต้องใช้ SDK เช่นกัน สำหรับเครื่องที่ไม่มี SDK ให้ publish เป็น self-contained binary บนเครื่องที่มี SDK ไปยังโฟลเดอร์นอก repository แล้วคัดลอก binary ตัวเดียวไป:
 
 ```
 dotnet publish tools/ThaiNationalIDCard.Diagnose -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ../thaiid-diagnose-linux-x64
 dotnet publish tools/ThaiNationalIDCard.Diagnose -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ../thaiid-diagnose-win-x64
 ```
 
-Then run `./thaiid-diagnose` or `thaiid-diagnose.exe`. The Linux binary still needs the PC/SC service and library above.
+จากนั้นรัน `./thaiid-diagnose` หรือ `thaiid-diagnose.exe` binary ของ Linux ยังต้องมีบริการและไลบรารี PC/SC ตามด้านบน
 
-| Option | Meaning |
+| ตัวเลือก | ความหมาย |
 |---|---|
-| `--mode public` | Default. Reads what is printed on the card. |
-| `--mode private` | Also probes the private areas for status and length. The tool lists them before reading. Chip data is not read: see below. |
-| `--reader NAME` | Use this reader, by its full name or as the report prints it. Default: first reader holding a card. |
-| `--json` | One JSON document on stdout, with the notice on stderr. |
+| `--mode public` | ค่าเริ่มต้น อ่านสิ่งที่พิมพ์อยู่บนบัตร รวมถึงรูปถ่าย |
+| `--mode private` | ตรวจพื้นที่ private เพิ่มเรื่องสถานะ ความยาว และรูปแบบ เครื่องมือแสดงรายการพื้นที่ก่อนอ่าน ไม่อ่านข้อมูลชิป: ดูด้านล่าง |
+| `--reader NAME` | ใช้เครื่องอ่านนี้ ด้วยชื่อเต็มหรือตามที่รายงานพิมพ์ ค่าเริ่มต้น: เครื่องแรกที่มีบัตร |
+| `--json` | JSON หนึ่งเอกสารบน stdout โดยข้อความแจ้งไปที่ stderr |
+| `--version` | พิมพ์เวอร์ชัน |
+| `--help`, `-h` | พิมพ์วิธีใช้ |
 
-No option prints card data, and none is planned.
+ไม่มีตัวเลือกใดพิมพ์ข้อมูลบัตร และไม่มีแผนจะเพิ่ม
 
-| Exit code | Meaning |
+| Exit code | ความหมาย |
 |---|---|
-| 0 | The read finished. Fields may still have failed: the report says which. |
-| 1 | Internal failure |
-| 2 | Bad arguments |
-| 3 | No PC/SC service |
-| 4 | Native PC/SC library missing |
-| 5 | No reader, or the named reader does not exist |
-| 6 | No card in the reader |
-| 7 | Unsupported card: the card or reader failed at transport level, or the card refused the expected applet |
-| 8 | Unknown read behaviour: no citizen ID came back with any allowed attempt |
-| 9 | Card removed during the read |
-| 10 | Other communication failure |
-| 130 | Cancelled |
+| 0 | การอ่านจบแล้ว field อาจยังล้มเหลวได้: รายงานจะบอกว่า field ใด |
+| 1 | ความล้มเหลวภายใน รวมถึงกรณีที่ guard ปฏิเสธคำสั่ง ซึ่งเป็นบั๊กของไลบรารี |
+| 2 | อาร์กิวเมนต์ไม่ถูกต้อง |
+| 3 | ไม่มีบริการ PC/SC |
+| 4 | ไม่พบ native library ของ PC/SC |
+| 5 | ไม่มีเครื่องอ่าน หรือไม่มีเครื่องอ่านที่ระบุชื่อ |
+| 6 | ไม่มีบัตรในเครื่องอ่าน |
+| 7 | บัตรไม่รองรับ: บัตรหรือเครื่องอ่านล้มเหลวในระดับ transport หรือบัตรปฏิเสธ applet ที่คาดไว้ |
+| 8 | พฤติกรรมการอ่านที่ไม่รู้จัก: ไม่ได้เลขประจำตัวประชาชนจากความพยายามทุกครั้งที่อนุญาต |
+| 9 | บัตรถูกดึงออกระหว่างการอ่าน |
+| 10 | ความล้มเหลวในการสื่อสารแบบอื่น |
+| 130 | ถูกยกเลิก |
 
-## What to send back
+## สิ่งที่ต้องส่งกลับ
 
-Run `--mode public` first, then `--mode private` only if the holder agrees, and send:
+รัน `--mode public` ก่อน แล้วรัน `--mode private` เฉพาะเมื่อผู้ถือบัตรยินยอม จากนั้นส่ง:
 
-- the whole output of each run, with the exit code
-- the year the card was issued and whether it is expired, if the holder is fine with sharing that
-- how the reader is connected, for example USB, over RDP, or from a service
+- ผลลัพธ์ทั้งหมดของแต่ละครั้ง ทั้ง stdout และ stderr พร้อม exit code
+- ปีที่ออกบัตรและบัตรหมดอายุแล้วหรือไม่ ถ้าผู้ถือบัตรยินดีเปิดเผย
+- วิธีเชื่อมต่อเครื่องอ่าน เช่น USB, ผ่าน RDP หรือจาก service
 
-The report has the tool and library version, OS, reader name, protocol, ATR, each command's status word and length, P2 used
-and pass or fail per field. It never has card content. Serials are removed from reader names, on a best effort basis, since
-real names have not been seen here: read the `reader:` line before you share it. Do not add values from the card to a report
-or an issue, including to help explain it.
+รายงานมีเวอร์ชันของเครื่องมือและไลบรารี OS ชื่อเครื่องอ่าน protocol ATR status word และความยาวของแต่ละคำสั่ง P2 ที่ใช้ และผ่านหรือไม่ผ่านของแต่ละ field รายงานไม่มีเนื้อหาจากบัตร หมายเลขซีเรียลถูกลบออกจากชื่อเครื่องอ่านเท่าที่ทำได้ เพราะยังไม่เคยเห็นชื่อจริง: อ่านบรรทัด `reader:` และรายการ `readers:` ก่อนแชร์ อย่าเพิ่มค่าจากบัตรลงในรายงานหรือ issue แม้จะเพื่อช่วยอธิบายก็ตาม
 
-## What a real card must answer
+## สิ่งที่บัตรจริงต้องตอบ
 
-The tool answers some of these directly. Others need the holder to compare results with what they can see on their own
-card, and only the conclusion should be sent back, never the value.
+เครื่องมือตอบบางข้อได้โดยตรง ข้ออื่นผู้ถือบัตรต้องเทียบผลกับสิ่งที่เห็นบนบัตรของตัวเอง และส่งกลับเฉพาะข้อสรุป ไม่ส่งค่า
 
-| Question | Tool output shows it? |
+| คำถาม | ผลลัพธ์ของเครื่องมือแสดงหรือไม่ |
 |---|---|
-| What does a wrong P2 really answer, and is the pending response kept? | Yes, if the first P2 fails |
-| Does retrying P2 have side effects? | No: the holder has to watch for a card that stops working |
-| Do `3B 67` cards exist? Do they need P2 01? | Yes: ATR, `AtrP2RuleUsed` and P2 used |
-| Does SELECT answer `61 0A`, on which generations? | Yes: status word |
-| What are the 10 bytes after SELECT `61 0A`? Does leaving them unread shift later data? | Partly: they are drained unread and never printed, so only the effect on later reads shows |
-| What does `0177-0178` mean? | No: compare with the holder's knowledge, in a separate approved test |
-| Do direct-answer readers exist as assumed? | Yes: no GET RESPONSE in the trace, P2 used `none` |
-| Does a direct-answer card send extra bytes? They cannot be prevented, only dropped. | Yes: `ExcessDropped` flag |
-| Does the transaction work on real readers, and on Windows over the 5 second idle limit? | Yes: transaction events, `CardReset` failures |
-| Which address parts sit in which position? Is the 8 part shape general? | Partly: `AddressShape` shows the count fits or not, order needs a separate approved test |
-| Do real name, date, sex and address shapes pass the validators? | Yes: `checks_failed` per field |
-| Do cards with a checksum mismatch exist? | Yes: `ChecksumMismatch` |
-| Is the photo always `FF D8` to `FF D9` inside 5118 bytes? | Yes: `JpegStart`, `JpegEnd` |
-| Does a card answer `61 xx` after all bytes of a field, as with `61 12` for Le 10? | Yes: `MoreOffered` |
-| Does the next command work after leaving such bytes on the card? | Yes: the next field's status |
-| Does a card ask `6C 12` for issue and expiry? The guard refuses that read, so the field fails. | Yes: `verdict=OutsideDeclaredRange` |
-| Do warning status words (`62 xx`, `63 xx`) come with useful data? They count as failures today. | Partly: status word and length, not the data |
-| Do ADM and NHSO exist across generations, and what answers if not? | Yes: `AppletUnavailable` and the status word, in private mode |
-| Does `80 00 00 00 07` answer 7 bytes and `61 10`, then 16 bytes? Other shapes keep the bytes and give no value. | Yes: the trace of `AppletData` and `GetResponse`, `received=` and `AppletDataShape` |
-| Does a card ask `6C 17` for that command? The guard refuses the resend, so the field fails. | Yes: `sw=6C17` and `FollowUpRejected` |
-| Is the value in that answer the Laser ID, 12 letters or digits with 4 NUL? | Partly: `AppletDataShape` shows the shape fits, the meaning needs a separate approved test |
-| What does SELECT with no AID (`00 A4 04 00`) choose, and is it safe to follow with `80 CA 9F 7F`? Chip data stays out until a separate approved test answers this. | No: the guard refuses both in every mode |
-| Do `CardInserted` and `CardRemoved` arrive for every insert and removal on a real reader, again and again? Issue #16 reports a card read only once. Its cause is not known, and the monitor tests do not show it is gone. | No: the tool does not use `ThaiIdCardMonitor`, so this needs a separate run, for example with `samples/WinFormsSample` |
-| Does the real monitor report a card already in the reader at the start, and what does unplugging a reader raise? | No: same |
-| Do `ToImage()` and `ToBitmapSource()` decode the JPEG a real card holds? Their tests use blank images made on Windows. | No: try `samples/WinFormsSample`, and report only whether the photo shows |
-| Are real reader names and the serial removal right? | Yes: check the `reader:` line against the real name |
-| Are the retry delays (100, 300, 900 ms) enough? | Partly: `Retry` events |
+| P2 ที่ผิดตอบอะไรจริง ๆ และ response ที่ค้างอยู่ยังอยู่หรือไม่ | ใช่ ถ้า P2 ค่าแรกล้มเหลว |
+| การลอง P2 ซ้ำมีผลข้างเคียงหรือไม่ | ไม่: ผู้ถือบัตรต้องสังเกตว่าบัตรหยุดทำงานหรือไม่ |
+| บัตร `3B 67` มีอยู่จริงหรือไม่ และต้องใช้ P2 01 หรือไม่ | ใช่: ATR, `AtrP2RuleUsed` และ P2 ที่ใช้ |
+| SELECT ตอบ `61 0A` หรือไม่ ในรุ่นบัตรใด | ใช่: status word |
+| 10 ไบต์หลัง SELECT `61 0A` คืออะไร การไม่อ่านทำให้ข้อมูลถัดไปเลื่อนหรือไม่ | บางส่วน: ไบต์ถูก drain โดยไม่อ่านและไม่พิมพ์ จึงเห็นเฉพาะผลต่อการอ่านครั้งถัดไป |
+| `0177-0178` หมายถึงอะไร | ไม่: เทียบกับสิ่งที่ผู้ถือบัตรรู้ ในการทดสอบแยกต่างหากที่ได้รับอนุมัติ |
+| เครื่องอ่านที่ตอบตรงมีอยู่ตามที่สมมติไว้หรือไม่ | ใช่: ไม่มี GET RESPONSE ใน trace และ P2 ที่ใช้เป็น `none` |
+| บัตรที่ตอบตรงส่งไบต์เกินมาหรือไม่ ป้องกันไม่ได้ ทำได้แค่ทิ้ง | ใช่: flag `ExcessDropped` |
+| Transaction ทำงานบนเครื่องอ่านจริงหรือไม่ และบน Windows เกินขีดจำกัดเวลาว่าง 5 วินาทีหรือไม่ | ใช่: event ของ transaction และความล้มเหลว `CardReset` |
+| ส่วนของที่อยู่แต่ละส่วนอยู่ตำแหน่งใด รูปแบบ 8 ส่วนใช้ได้ทั่วไปหรือไม่ | บางส่วน: `AddressShape` แสดงว่าจำนวนส่วนเข้ากันหรือไม่ ลำดับต้องใช้การทดสอบแยกต่างหากที่ได้รับอนุมัติ |
+| ชื่อ วันที่ เพศ และที่อยู่จริงผ่าน validator หรือไม่ | ใช่: `checks_failed` ของแต่ละ field |
+| มีบัตรที่เลขตรวจสอบไม่ตรงหรือไม่ | ใช่: `ChecksumMismatch` |
+| รูปถ่ายอยู่ระหว่าง `FF D8` ถึง `FF D9` ภายใน 5118 ไบต์เสมอหรือไม่ | ใช่: `JpegStart`, `JpegEnd` |
+| บัตรตอบ `61 xx` หลังส่งไบต์ของ field ครบแล้วหรือไม่ เช่น `61 12` สำหรับ Le 10 | ใช่: `MoreOffered` |
+| คำสั่งถัดไปทำงานหรือไม่หลังปล่อยไบต์เหล่านั้นค้างบนบัตร | ใช่: สถานะของ field ถัดไป |
+| บัตรขอ `6C 12` สำหรับวันออกบัตรและวันหมดอายุหรือไม่ guard ปฏิเสธการอ่านนั้น field จึงล้มเหลว | ใช่: `verdict=OutsideDeclaredRange` |
+| Status word เตือน (`62 xx`, `63 xx`) มาพร้อมข้อมูลที่ใช้ได้หรือไม่ ตอนนี้นับเป็นความล้มเหลว | บางส่วน: status word และความยาว ไม่มีข้อมูล |
+| ADM และ NHSO มีในทุกรุ่นบัตรหรือไม่ ถ้าไม่มีตอบอะไร | ใช่: `AppletUnavailable` และ status word ในโหมด private |
+| `80 00 00 00 07` ตอบ 7 ไบต์และ `61 10` แล้วตามด้วย 16 ไบต์หรือไม่ รูปแบบอื่นจะเก็บไบต์ไว้และไม่ให้ค่า | ใช่: trace ของ `AppletData` และ `GetResponse`, `received=` และ `AppletDataShape` |
+| บัตรขอ `6C 17` สำหรับคำสั่งนั้นหรือไม่ guard ปฏิเสธการส่งซ้ำ field จึงล้มเหลว | ใช่: `sw=6C17` และ `FollowUpRejected` |
+| ค่าในคำตอบนั้นคือ Laser ID ที่เป็นตัวอักษรหรือตัวเลข 12 ตัวตามด้วย NUL 4 ตัวหรือไม่ | บางส่วน: `AppletDataShape` แสดงว่ารูปแบบเข้ากันหรือไม่ ความหมายต้องใช้การทดสอบแยกต่างหากที่ได้รับอนุมัติ |
+| SELECT ที่ไม่มี AID (`00 A4 04 00`) เลือกอะไร และปลอดภัยไหมที่จะตามด้วย `80 CA 9F 7F` ข้อมูลชิปจะอยู่นอกขอบเขตจนกว่าการทดสอบแยกต่างหากที่ได้รับอนุมัติจะตอบข้อนี้ | ไม่: guard ปฏิเสธทั้งสองคำสั่งในทุกโหมด |
+| `CardInserted` และ `CardRemoved` มาทุกครั้งที่เสียบและดึงบัตรบนเครื่องอ่านจริงซ้ำ ๆ หรือไม่ Issue #16 รายงานว่าบัตรอ่านได้แค่ครั้งเดียว ยังไม่ทราบสาเหตุ และการทดสอบของ monitor ไม่ได้แสดงว่าปัญหานี้หมดไป | ไม่: เครื่องมือไม่ได้ใช้ `ThaiIdCardMonitor` จึงต้องรันแยก เช่น ด้วย `samples/WinFormsSample` |
+| Monitor จริงรายงานบัตรที่อยู่ในเครื่องอ่านตอนเริ่มหรือไม่ และการถอดเครื่องอ่านทำให้เกิดอะไร | ไม่: เช่นเดียวกัน |
+| `ToImage()` และ `ToBitmapSource()` ถอดรหัส JPEG ที่อยู่ในบัตรจริงได้หรือไม่ การทดสอบใช้ภาพเปล่าที่สร้างบน Windows | ไม่: ลองใช้ `samples/WinFormsSample` และรายงานเฉพาะว่ารูปแสดงหรือไม่ |
+| ชื่อเครื่องอ่านจริงและการลบหมายเลขซีเรียลถูกต้องหรือไม่ | ใช่: เทียบบรรทัด `reader:` กับชื่อจริง |
+| การหน่วงเวลาลองใหม่ (100, 300, 900 ms) เพียงพอหรือไม่ | บางส่วน: event `Retry` |
 
-## If a finding changes something
+## ถ้าข้อค้นพบทำให้ต้องเปลี่ยนอะไร
 
-Read behaviour belongs in `ReadPolicy` (`src/ThaiNationalIDCard/Workflow/ReadPolicy.cs`) and layout in the profiles
-(`src/ThaiNationalIDCard/Card/CardProfile.cs`). Most findings should need a change there and nowhere else. `docs/architecture.md`
-has the full list.
+พฤติกรรมการอ่านอยู่ใน `ReadPolicy` (`src/ThaiNationalIDCard/Workflow/ReadPolicy.cs`) และโครงสร้างอยู่ใน profile (`src/ThaiNationalIDCard/Card/CardProfile.cs`) ข้อค้นพบส่วนใหญ่ควรแก้แค่ตรงนั้น รายการทั้งหมดอยู่ใน `docs/architecture.md`

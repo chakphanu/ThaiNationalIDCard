@@ -1,14 +1,14 @@
-# Migrating from 2.x to 3.0
+# การย้ายจาก 2.x ไป 3.0
 
-v3 is a rewrite with no compatibility layer. If you need .NET Framework 4.0 to 4.6.1, or cannot change code now, stay on
-[`release/2.x`](https://github.com/chakphanu/ThaiNationalIDCard/tree/release/2.x), which still gets bug fixes.
+v3 เขียนใหม่และไม่มีชั้นความเข้ากันได้ ถ้าต้องใช้ .NET Framework 4.0 ถึง 4.6.1 หรือยังแก้โค้ดตอนนี้ไม่ได้ ให้อยู่ที่ [`release/2.x`](https://github.com/chakphanu/ThaiNationalIDCard/tree/release/2.x) ซึ่งยังได้รับการแก้บั๊ก
 
-**v3 is a preview that has not been tested on a real card.** 2.x has a longer history in the field. Check v3 with your own
-reader and card before you depend on it.
+**v3 เป็น preview ที่ยังไม่เคยทดสอบกับบัตรจริง** 2.x มีประวัติการใช้งานยาวนานกว่า แต่เอกสารนี้ไม่ได้รับรองว่าสายใดใช้ได้กับบัตรหรือเครื่องอ่านรุ่นใด ตรวจสอบ v3 กับเครื่องอ่านและบัตรของคุณเองก่อนจะพึ่งพามัน
 
-v3 targets `net10.0`, `net8.0` and `netstandard2.0`. .NET Framework can use the `netstandard2.0` asset. CI covers it on `net48` only.
+ยังไม่มีการเผยแพร่แพ็กเกจรุ่น 2.0.1 หรือ 3.x
 
-## Shape of the change
+v3 target `net10.0`, `net8.0` และ `netstandard2.0` .NET 8 จะหมดระยะการสนับสนุนในวันที่ 10 พฤศจิกายน 2026 .NET Framework ใช้ asset ของ `netstandard2.0` ได้ CI ทดสอบกรณีนี้บน `net48` เท่านั้น และ CI ใช้ตัวจำลอง การที่ CI ผ่านจึงไม่ใช่หลักฐานด้านฮาร์ดแวร์
+
+## ภาพรวมการเปลี่ยนแปลง
 
 ```csharp
 // 2.x
@@ -36,85 +36,79 @@ catch (ThaiIdCardException ex)
 }
 ```
 
-## `ThaiIDCard` to `ThaiIdCardReader` and `ThaiIdCardMonitor`
+## จาก `ThaiIDCard` ไปเป็น `ThaiIdCardReader` และ `ThaiIdCardMonitor`
 
 | 2.x | 3.0 |
 |---|---|
-| `new ThaiIDCard()` | `new ThaiIdCardReader()`, or the `IThaiIdCardReader` interface for mocks |
-| `GetReaders()` | `GetReaderNames()`. Empty when there are none, where 2.x threw |
-| `readAll()` | `ReadAsync(token)`, or `ReadAsync(name, options, token)` |
+| `new ThaiIDCard()` | `new ThaiIdCardReader()` หรือ interface `IThaiIdCardReader` สำหรับ mock |
+| `GetReaders()` | `GetReaderNames()` คืนรายการว่างเมื่อไม่มีเครื่องอ่าน ขณะที่ 2.x โยน exception |
+| `readAll()` | `ReadAsync(token)` หรือ `ReadAsync(name, options, token)` |
 | `readAll(true)`, `readAllPhoto()` | `ReadAsync(name, new ReadOptions { IncludePhoto = true }, token)` |
 | `readAll(with_photo, readerName)` | `ReadAsync(readerName, new ReadOptions { IncludePhoto = with_photo }, token)` |
-| `readCitizenid()` | No equivalent. A read covers all public fields |
-| `Open()`, `Close()` | Removed. Each read connects and disconnects on its own |
-| `ErrorCode()`, `Error()` | Exceptions |
-| `Version()` | Removed. Use the assembly or package version |
-| `MonitorStart(name)` | `new ThaiIdCardMonitor(names)`, the events, then `monitor.Start()` |
-| `MonitorStop(name)` | `monitor.Stop()` or `monitor.Dispose()` |
-| `eventCardInserted`, `eventCardInsertedWithPhoto` | `CardInserted`, with `ReaderName` and `AtrHex`. It carries no card data: call `ReadAsync` from your handler |
-| `eventCardRemoved` | `CardRemoved`, with `ReaderName` |
-| `eventPhotoProgress` | `ReadOptions.PhotoProgress`, an `IProgress<PhotoReadProgress>` with `BytesRead` and `TotalBytes` |
-| None | `MonitorError` tells when watching a reader failed |
+| `readCitizenid()` | ไม่มีตัวแทน การอ่านหนึ่งครั้งครอบคลุมทุก field ของโหมด public |
+| `Open()`, `Close()` | ถอดออก การอ่านแต่ละครั้งเชื่อมต่อและตัดการเชื่อมต่อเอง |
+| `ErrorCode()`, `Error()` | Exception |
+| `Version()` | ถอดออก ใช้เวอร์ชันของ assembly หรือแพ็กเกจ |
+| `MonitorStart(name)` | `new ThaiIdCardMonitor(names)`, event ต่าง ๆ แล้ว `monitor.Start()` |
+| `MonitorStop(name)` | `monitor.Stop()` หรือ `monitor.Dispose()` |
+| `eventCardInserted`, `eventCardInsertedWithPhoto` | `CardInserted` พร้อม `ReaderName` และ `AtrHex` ไม่มีข้อมูลบัตรมาด้วย: เรียก `ReadAsync` จาก handler ของคุณ |
+| `eventCardRemoved` | `CardRemoved` พร้อม `ReaderName` |
+| `eventPhotoProgress` | `ReadOptions.PhotoProgress` เป็น `IProgress<PhotoReadProgress>` ที่มี `BytesRead` และ `TotalBytes` |
+| ไม่มี | `MonitorError` แจ้งเมื่อการเฝ้าดูเครื่องอ่านล้มเหลว |
 
-## `Personal` to `ThaiIdCardData`
+## จาก `Personal` ไปเป็น `ThaiIdCardData`
 
 | 2.x | 3.0 |
 |---|---|
-| `Citizenid` | `CitizenId`, plus `IsValidCitizenId` and `PersonCategoryCode` |
-| `Birthday` | `BirthDate`: a `ThaiCardDate`, see below |
-| `BirthdayYearString` | `BirthDate.Year`, nullable and Gregorian |
-| `Sex` (text from the card) | `Sex`, an enum `CardSex`, and `SexRaw` for the byte |
+| `Citizenid` | `CitizenId` พร้อม `IsValidCitizenId` และ `PersonCategoryCode` |
+| `Birthday` | `BirthDate`: เป็น `ThaiCardDate` ดูด้านล่าง |
+| `BirthdayYearString` | `BirthDate.Year` เป็น nullable และเป็นปีคริสต์ศักราช |
+| `Sex` (ข้อความจากบัตร) | `Sex` เป็น enum `CardSex` และ `SexRaw` สำหรับไบต์ |
 | `Th_Prefix`, `Th_Firstname`, `Th_Middlename`, `Th_Lastname` | `ThaiName.Prefix`, `.FirstName`, `.MiddleName`, `.LastName` |
 | `En_Prefix`, `En_Firstname`, `En_Middlename`, `En_Lastname` | `EnglishName.Prefix`, `.FirstName`, `.MiddleName`, `.LastName` |
-| `Info` | Removed. `ThaiName.Raw` and `EnglishName.Raw` hold the raw names |
+| `Info` | ถอดออก `ThaiName.Raw` และ `EnglishName.Raw` เก็บชื่อแบบดิบ |
 | `Address` | `Address.Full` |
-| `addrHouseNo` | `Address.RawParts`. No property, as nothing labels this part |
+| `addrHouseNo` | `Address.RawParts` ไม่มี property เพราะส่วนนี้ไม่มีป้ายกำกับ |
 | `addrVillageNo` | `Address.Moo` |
-| `addrLane` | `Address.Soi` or `Address.Trok`, see below |
-| `addrRoad` | `Address.Road`, see below |
-| `addrTambol` | `Address.Tambon` or `Address.Khwaeng` |
-| `addrAmphur` | `Address.Amphoe` or `Address.Khet` |
+| `addrLane` | `Address.Soi` หรือ `Address.Trok` ดูด้านล่าง |
+| `addrRoad` | `Address.Road` ดูด้านล่าง |
+| `addrTambol` | `Address.Tambon` หรือ `Address.Khwaeng` |
+| `addrAmphur` | `Address.Amphoe` หรือ `Address.Khet` |
 | `addrProvince` | `Address.Province` |
-| `Issue` | `IssueDate`: a `ThaiCardDate` |
-| `Expire`, `ExpireString` | `ExpiryDate`: a `ThaiCardDate` |
-| `Issue_Expire` | Removed |
+| `Issue` | `IssueDate`: เป็น `ThaiCardDate` |
+| `Expire`, `ExpireString` | `ExpiryDate`: เป็น `ThaiCardDate` |
+| `Issue_Expire` | ถอดออก |
 | `Issuer` | `Issuer` |
-| `PhotoRaw` | `GetPhoto()`, which returns a copy |
-| `PhotoBitmap` | `GetPhoto()?.ToImage()` from the `ThaiNationalIDCard.Windows` package. The core library has no Windows dependency now |
+| `PhotoRaw` | `GetPhoto()` ซึ่งคืนสำเนา |
+| `PhotoBitmap` | `GetPhoto()?.ToImage()` จากแพ็กเกจ `ThaiNationalIDCard.Windows` ตอนนี้ไลบรารีหลักไม่ขึ้นกับ Windows แล้ว |
 
-`Personal` had setters because the library filled it in. `ThaiIdCardData` is read-only, and has a public constructor for mocks.
+`Personal` มี setter เพราะไลบรารีเป็นผู้เติมค่า `ThaiIdCardData` เป็นแบบอ่านอย่างเดียว และมี public constructor สำหรับ mock
 
-## 2.x quirks that changed on purpose
+## พฤติกรรมเฉพาะของ 2.x ที่ตั้งใจเปลี่ยน
 
-Code that relied on these needs a closer look than a rename.
+โค้ดที่พึ่งพาเรื่องเหล่านี้ต้องตรวจละเอียดกว่าการเปลี่ยนชื่อ
 
-| 2.x did | 3.0 does | Why |
+| 2.x | 3.0 | เหตุผล |
 |---|---|---|
-| `Birthday` with year `0000` gave the **current year** | `BirthDate.Year` is null | A made-up year looks like a real birth date, and a wrong age can follow from it |
-| `Birthday`, `Issue` and `Expire` with month or day `00` gave `1` | `Month` and `Day` are null, and `Raw` keeps what the card holds | Same. Public sources describe `00` as unknown |
-| `Expire` for `99999999` gave `9456-12-31` | `ExpiryDate.IsLifetime` is true, and `Year`, `Month` and `Day` are null | Public sources describe `99999999` as a card with no expiry. The date was only a product of clamping |
-| Monitor handlers got a **null** `Personal` on failure, with the reason in `Error()` | The monitor reads nothing. `ReadAsync` raises a typed exception in your own handler | The failure now reaches you with its type and trace. A shared error field did not say which read it belonged to |
-| `readAll` returned **null** on failure | Exceptions | Same |
-| A bad status could come back as data and be decoded as text | A status other than `90 00` fails that one field. See `Quality` | Status bytes must not end up as text |
-| `addrLane` was part 2 and `addrRoad` part 3, by position | A labelled property is set only when a part starts with that Thai label | Public code disagrees on the order, and only one card's shape has been published. Without a label the value stays in `RawParts` |
+| `Birthday` ที่ปีเป็น `0000` ให้**ปีปัจจุบัน** | `BirthDate.Year` เป็น null | ปีที่แต่งขึ้นดูเหมือนวันเกิดจริง และอาจทำให้อายุผิดตามไปด้วย |
+| `Birthday`, `Issue` และ `Expire` ที่เดือนหรือวันเป็น `00` ให้ `1` | `Month` และ `Day` เป็น null และ `Raw` เก็บค่าที่บัตรมี | เหตุผลเดียวกัน แหล่งข้อมูลสาธารณะอธิบายว่า `00` คือไม่ทราบ |
+| `Expire` ของ `99999999` ให้ `9456-12-31` | `ExpiryDate.IsLifetime` เป็น true และ `Year`, `Month`, `Day` เป็น null | แหล่งข้อมูลสาธารณะอธิบายว่า `99999999` คือบัตรที่ไม่มีวันหมดอายุ วันที่นั้นเป็นแค่ผลจากการ clamp |
+| Monitor handler ได้ `Personal` เป็น **null** เมื่อล้มเหลว โดยเหตุผลอยู่ใน `Error()` | Monitor ไม่อ่านอะไร `ReadAsync` โยน typed exception ใน handler ของคุณ | ความล้มเหลวมาถึงคุณพร้อม type และ trace ส่วน error field ที่ใช้ร่วมกันไม่ได้บอกว่าเป็นของการอ่านครั้งไหน |
+| `readAll` คืน **null** เมื่อล้มเหลว | Exception | เหตุผลเดียวกัน |
+| สถานะที่ไม่ถูกต้องอาจกลับมาเป็นข้อมูลและถูกถอดรหัสเป็นข้อความ | สถานะอื่นที่ไม่ใช่ `90 00` ทำให้ field นั้น field เดียวล้มเหลว ดู `Quality` | ไบต์สถานะต้องไม่กลายเป็นข้อความ |
+| `addrLane` คือส่วนที่ 2 และ `addrRoad` คือส่วนที่ 3 ตามตำแหน่ง | property ที่มีป้ายกำกับจะมีค่าเฉพาะเมื่อส่วนนั้นขึ้นต้นด้วยป้ายภาษาไทยนั้น | โค้ดสาธารณะบอกลำดับไม่ตรงกัน และมีการเผยแพร่รูปแบบจากบัตรเพียงใบเดียว ถ้าไม่มีป้ายค่าจะคงอยู่ใน `RawParts` |
 
-For age, `BirthDate.AgeReferenceDate` follows Thai Civil Code section 16 for an unknown month or day. It is a date to count from,
-and not the birth date.
+สำหรับการนับอายุ `BirthDate.AgeReferenceDate` ใช้ตามประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 16 เมื่อไม่ทราบเดือนหรือวัน ค่านี้เป็นวันที่ใช้เริ่มนับ ไม่ใช่วันเกิด
 
-There is no `IsExpired`. An English translation of the Identity Card Act has a rule that a card not yet expired when the holder
-turns 70 stays valid for life, so comparing dates alone could be wrong. That rule has not been confirmed against the Thai text.
+ไม่มี `IsExpired` คำแปลภาษาอังกฤษของ พ.ร.บ.บัตรประจำตัวประชาชน พ.ศ. 2526 มีกฎว่าบัตรที่ยังไม่หมดอายุเมื่อผู้ถือบัตรอายุครบ 70 ปีใช้ได้ตลอดชีพ การเทียบวันที่อย่างเดียวจึงอาจผิด กฎนี้ยังไม่ได้ยืนยันกับตัวบทภาษาไทย
 
-## Also different
+## ความแตกต่างอื่น ๆ
 
-- **Choosing what to read:** `ReadOptions.Mode` is `Public` by default. 2.x had no such choice. See `docs/privacy.md`.
-- **Bytes 0177-0178:** some 2.x versions read these along with the issue and expiry dates. v3 reads them only in private mode,
-  raw, as `Private.MoiRaw0177`. Public sources disagree on what they mean.
-- **Lengths:** the address is read as 160 bytes, where 2.x read 100, and the photo as 5118, where 2.x read 5100. The new values
-  come from public sources agreeing, and are not confirmed on a real card by this project.
-- **Photo:** a photo without a valid JPEG start and end is not given at all, and `PhotoFailure` says why.
-- **Threads:** the `Async` methods run the blocking PC/SC calls on a thread pool thread and do not touch your synchronization
-  context. Marshal monitor events and progress to your UI thread yourself.
-- **Readers:** a read never falls back to another reader when you name one. `ReadAsync(token)` picks the first reader holding a
-  readable card, and with several readers in use it is better to name one.
-- **Logging:** `ToString()` of the data types and exception messages hold no card data. Log those instead of field values.
-- **Identity:** reading is not proof of identity, and v3 has no `IsVerified`. See `docs/privacy.md`.
+- **การเลือกสิ่งที่จะอ่าน:** `ReadOptions.Mode` เป็น `Public` โดยค่าเริ่มต้น 2.x ไม่มีตัวเลือกนี้ ดู `docs/privacy.md`
+- **ไบต์ 0177-0178:** 2.x บางเวอร์ชันอ่านไบต์เหล่านี้พร้อมกับวันออกบัตรและวันหมดอายุ v3 อ่านเฉพาะในโหมด private เป็นค่าดิบใน `Private.MoiRaw0177` แหล่งข้อมูลสาธารณะตีความความหมายไม่ตรงกัน
+- **ความยาว:** ที่อยู่อ่าน 160 ไบต์ ขณะที่ 2.x อ่าน 100 และรูปถ่ายอ่าน 5118 ขณะที่ 2.x อ่าน 5100 ค่าใหม่มาจากแหล่งข้อมูลสาธารณะที่ตรงกัน และโปรเจกต์นี้ยังไม่ได้ยืนยันกับบัตรจริง
+- **รูปถ่าย:** รูปที่ไม่มีจุดเริ่มต้นและจุดสิ้นสุด JPEG ที่ถูกต้องจะไม่ถูกส่งให้เลย และ `PhotoFailure` บอกเหตุผล
+- **Thread:** เมธอด `Async` รันการเรียก PC/SC แบบ blocking บน thread pool thread และไม่แตะ synchronization context ของคุณ ต้อง marshal event ของ monitor และ progress ไปที่ UI thread เอง
+- **เครื่องอ่าน:** เมื่อระบุชื่อเครื่องอ่าน การอ่านจะไม่เปลี่ยนไปใช้เครื่องอื่น `ReadAsync(token)` เลือกเครื่องแรกที่มีบัตรที่อ่านได้ ถ้าใช้หลายเครื่องควรระบุชื่อ
+- **การ log:** `ToString()` ของ type ข้อมูลและข้อความของ exception ไม่มีข้อมูลบัตร ให้ log สิ่งเหล่านี้แทนค่าใน field
+- **การพิสูจน์ตัวตน:** การอ่านไม่ใช่การพิสูจน์ตัวตน และ v3 ไม่มี `IsVerified` ดู `docs/privacy.md`

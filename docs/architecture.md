@@ -1,12 +1,10 @@
-# Architecture
+# สถาปัตยกรรม
 
-Everything here was built and tested against a simulator. No part of it has run against a real card.
+ทุกอย่างในเอกสารนี้สร้างและทดสอบกับตัวจำลอง ยังไม่มีส่วนใดเคยรันกับบัตรจริง
 
-The aim is a library that survives new card generations without code changes as far as that is possible: the card's own
-behaviour decides how to read it, and what cannot be decided that way lives in data. A moved layout, a new AID or mandatory
-authentication cannot be handled automatically and need a new release.
+เป้าหมายคือไลบรารีที่รับมือบัตรรุ่นใหม่ได้โดยไม่ต้องแก้โค้ดเท่าที่จะทำได้: พฤติกรรมของบัตรเป็นตัวตัดสินวิธีอ่าน และสิ่งที่ตัดสินแบบนั้นไม่ได้จะอยู่ในข้อมูล โครงสร้างที่ย้ายตำแหน่ง AID ใหม่ หรือการยืนยันตัวตนที่บังคับ ไม่สามารถจัดการอัตโนมัติได้และต้องออกรุ่นใหม่
 
-## Layers
+## ชั้นของระบบ
 
 ```
 Public    ThaiIdCardReader, IThaiIdCardReader, ThaiIdCardMonitor, models, ReadOptions, ReadDiagnostics, exceptions
@@ -18,97 +16,78 @@ Hardware  IRawCardChannel, GuardedCardConnection, CommandPolicy, IReaderMonitor,
           Hardware/Pcsc: PcscRawCardChannel, the only code that knows PCSC
 ```
 
-Everything below the public types is `internal`. `CardProfile` is internal too in this first version, so a moved field or a
-new AID needs a release until it is opened up. It can become public later without a breaking change.
+ทุกอย่างที่อยู่ใต้ type สาธารณะเป็น `internal` `CardProfile` ก็เป็น internal ในเวอร์ชันแรกนี้ ดังนั้น field ที่ย้ายตำแหน่งหรือ AID ใหม่ต้องออกรุ่นใหม่จนกว่าจะเปิดเป็นสาธารณะ ซึ่งภายหลังเปิดได้โดยไม่เกิด breaking change
 
-**Rule: only `Hardware/Pcsc` knows PCSC.** No type in another namespace mentions a PCSC type, in a signature or in a method
-body, and no public signature exposes one. A PC/SC failure leaves that layer as a `ThaiIdCardException`.
+**กฎ: มีเพียง `Hardware/Pcsc` ที่รู้จัก PCSC** ไม่มี type ใน namespace อื่นอ้างถึง type ของ PCSC ทั้งใน signature และในเนื้อเมธอด และไม่มี signature สาธารณะใดเปิดเผย type ของ PCSC ความล้มเหลวของ PC/SC ออกจากชั้นนี้ในรูป `ThaiIdCardException`
 
-`ArchitectureTests` enforces the layer rules on the built assembly, including the IL of method bodies, and has control tests to
-show the scan finds what it looks for. It also checks that:
+`ArchitectureTests` บังคับกฎของชั้นบน assembly ที่ build แล้ว รวมถึง IL ของเนื้อเมธอด และมีการทดสอบควบคุมเพื่อแสดงว่าการสแกนพบสิ่งที่มองหาจริง นอกจากนี้ยังตรวจว่า:
 
-- `Card` and `Parsing` do not depend on `Hardware` or `Protocol`
-- `Workflow` has no way to wait except an injected delay
-- the library has no way to log
-- the monitor has no way to read a card
+- `Card` และ `Parsing` ไม่ขึ้นกับ `Hardware` หรือ `Protocol`
+- `Workflow` ไม่มีวิธีรอใด ๆ นอกจาก delay ที่ inject เข้ามา
+- ไลบรารีไม่มีวิธี log
+- monitor ไม่มีวิธีอ่านบัตร
 
-`ThaiNationalIDCard.Windows` is separate and depends on nothing here. It only turns JPEG bytes into Windows image types.
+`ThaiNationalIDCard.Windows` แยกต่างหากและไม่ขึ้นกับสิ่งใดในชุดนี้ ทำหน้าที่แปลงไบต์ JPEG เป็น image type ของ Windows เท่านั้น
 
-## Guard
+## ตัวคุมคำสั่ง (guard)
 
-`GuardedCardConnection` is sealed and is the only way to send a command. `ApduExchange` accepts nothing else, so PC/SC and the
-simulator both sit under the same guard, and every test exercises the real one. It tracks the selected applet and whether a
-GET RESPONSE is due, because READ ranges belong to one applet: `015D` is an NHSO field but sits inside an off limits MOI range.
+`GuardedCardConnection` เป็น sealed และเป็นทางเดียวในการส่งคำสั่ง `ApduExchange` ไม่รับอย่างอื่น ดังนั้น PC/SC และตัวจำลองจึงอยู่ใต้ guard เดียวกัน และทุกการทดสอบใช้ guard ตัวจริง guard ติดตาม applet ที่เลือกอยู่และดูว่าต้องส่ง GET RESPONSE หรือไม่ เพราะช่วงของ READ เป็นของ applet ใด applet หนึ่ง: `015D` เป็น field ของ NHSO แต่อยู่ในช่วงต้องห้ามของ MOI
 
-`CommandPolicy` is an allowlist with no way to add a raw command.
+`CommandPolicy` เป็น allowlist ที่ไม่มีวิธีเพิ่มคำสั่งดิบ
 
-| Mode | Allowed |
+| โหมด | ที่อนุญาต |
 |---|---|
-| `Public` | SELECT of MOI, GET RESPONSE `00 C0 00 {00,01}` when one is due, `80 B0` inside the public ranges of the profile |
-| `PublicAndPrivate` | Adds SELECT of NHSO and ADM, the private MOI ranges, the NHSO ranges, and `80 00 00 00 07` in ADM |
-| Refused in every mode | `80 20`, `80 B4`, `B0 34`, ISO write and reference data instructions, SELECT with no AID, `80 CA`, and anything not listed |
+| `Public` | SELECT ของ MOI, GET RESPONSE `00 C0 00 {00,01}` เมื่อถึงกำหนด, `80 B0` ภายในช่วง public ของ profile |
+| `PublicAndPrivate` | เพิ่ม SELECT ของ NHSO และ ADM, ช่วง private ของ MOI, ช่วงของ NHSO และ `80 00 00 00 07` ใน ADM |
+| ปฏิเสธในทุกโหมด | `80 20`, `80 B4`, `B0 34`, คำสั่ง ISO สำหรับการเขียนและ reference data, SELECT ที่ไม่มี AID, `80 CA` และทุกอย่างที่ไม่อยู่ในรายการ |
 
-A resend after `6C xx` goes through the guard like any other command, so a card cannot widen a read beyond its declared range.
-A profile cannot widen what is off limits either: a readable range that overlaps a never-read range fails when the profile is
-built, before any card access.
+การส่งซ้ำหลัง `6C xx` ผ่าน guard เหมือนคำสั่งอื่น บัตรจึงขยายการอ่านเกินช่วงที่ประกาศไว้ไม่ได้ profile ก็ขยายส่วนที่ต้องห้ามไม่ได้เช่นกัน: ช่วงที่อ่านได้ที่ทับกับช่วงที่ห้ามอ่านจะล้มเหลวตั้งแต่ตอนสร้าง profile ก่อนจะแตะบัตร
 
-## Read sequence
+## ลำดับการอ่าน
 
-1. List the readers with their state and pick one. `ThaiIdCardReader` takes one read per reader at a time within the process.
-2. Connect in Shared mode. A retry happens outside the transaction after a delay, for `CardReset` and `SharingViolation`, and for
-   `CardRemoved` only while connecting. There is no retry after a timeout, and the fixed 1500 ms delay of 2.x is gone.
-3. Open the transaction. Nothing sleeps inside it, because Windows resets a card after 5 seconds idle in a transaction.
-4. SELECT MOI. Anything but `90 00` or `61 xx` raises `UnsupportedCardException`. After `61 xx`, a GET RESPONSE is sent and its
-   bytes are dropped unread.
-5. CID gate, `80 B0 00 04 02 00 0D`:
-   - 13 digits and the check digit fits: lock this P2.
-   - 13 digits but it does not fit: re-SELECT and read again with the same P2, once. If it still does not fit, go on and mark the
-     field `Suspect`.
-   - Anything else: re-SELECT and try the other P2, once per read. If no GET RESPONSE was sent, P2 played no part, so the same read
-     is tried once more instead. If that fails too, raise `UnknownReadBehaviourException`.
-6. Read the fields of the profile. A status other than `90 00` fails that field, and its bytes are not decoded as text.
-7. In private mode, read the private MOI ranges, then SELECT NHSO and ADM. A failure here costs only those fields.
-8. Close the transaction in `finally`.
+1. แสดงรายการเครื่องอ่านพร้อมสถานะและเลือกหนึ่งเครื่อง `ThaiIdCardReader` อ่านได้ครั้งละหนึ่งการอ่านต่อเครื่องอ่านภายใน process เดียวกัน
+2. เชื่อมต่อในโหมด Shared การลองใหม่เกิดนอก transaction หลังหน่วงเวลา สำหรับ `CardReset` และ `SharingViolation` และสำหรับ `CardRemoved` เฉพาะระหว่างเชื่อมต่อ ไม่มีการลองใหม่หลัง timeout และหน่วงเวลาคงที่ 1500 ms ของ 2.x ถูกถอดออก
+3. เปิด transaction ข้างในไม่มีการ sleep เพราะ Windows จะ reset บัตรเมื่อ transaction ว่างนาน 5 วินาที
+4. SELECT MOI ค่าอื่นนอกจาก `90 00` หรือ `61 xx` จะโยน `UnsupportedCardException` หลัง `61 xx` จะส่ง GET RESPONSE และทิ้งไบต์โดยไม่อ่าน
+5. ด่านตรวจ CID, `80 B0 00 04 02 00 0D`:
+   - ครบ 13 หลักและเลขตรวจสอบตรง: ล็อก P2 นี้
+   - ครบ 13 หลักแต่เลขตรวจสอบไม่ตรง: SELECT ใหม่แล้วอ่านซ้ำด้วย P2 เดิมหนึ่งครั้ง ถ้ายังไม่ตรงให้อ่านต่อและตั้ง field เป็น `Suspect`
+   - กรณีอื่น: SELECT ใหม่แล้วลอง P2 อีกค่า ได้หนึ่งครั้งต่อการอ่าน ถ้าไม่เคยส่ง GET RESPONSE แสดงว่า P2 ไม่เกี่ยวข้อง จึงลองอ่านแบบเดิมอีกหนึ่งครั้งแทน ถ้ายังล้มเหลวจะโยน `UnknownReadBehaviourException`
+6. อ่าน field ตาม profile สถานะอื่นที่ไม่ใช่ `90 00` ทำให้ field นั้นล้มเหลว และไบต์ของมันจะไม่ถูกถอดรหัสเป็นข้อความ
+7. ในโหมด private อ่านช่วง private ของ MOI แล้ว SELECT NHSO และ ADM ความล้มเหลวตรงนี้กระทบเฉพาะ field เหล่านั้น
+8. ปิด transaction ใน `finally`
 
-`ApduExchange` is the SW1 state machine: `90 00` ends, `61 xx` sends GET RESPONSE (`00` means 256) up to a round limit, `6C xx`
-resends once, and anything else returns the status. This is how direct-answer readers and `61 xx` readers share one code path
-without knowing the reader model.
+`ApduExchange` คือ SW1 state machine: `90 00` จบ, `61 xx` ส่ง GET RESPONSE (`00` หมายถึง 256) ได้ไม่เกินจำนวนรอบที่กำหนด, `6C xx` ส่งซ้ำหนึ่งครั้ง และค่าอื่นคืนสถานะ ด้วยวิธีนี้เครื่องอ่านที่ตอบตรงและเครื่องอ่านที่ตอบ `61 xx` จึงใช้โค้ดเส้นทางเดียวกันโดยไม่ต้องรู้รุ่นเครื่องอ่าน
 
-The ATR only orders the P2 attempts: `3B 67` gives `[01, 00]` and anything else `[00, 01]`. A short ATR is normal, and the
-trace records when the rule was used. In the public evidence no Thai card shows `3B 67`, and the rule is kept because there is
-no card to prove that removing it is safe.
+ATR มีผลแค่ลำดับการลอง P2: `3B 67` ให้ `[01, 00]` และค่าอื่นให้ `[00, 01]` ATR ที่สั้นถือเป็นเรื่องปกติ และ trace จะบันทึกเมื่อมีการใช้กฎนี้ ในหลักฐานสาธารณะไม่มีบัตรไทยที่แสดง `3B 67` ที่ยังคงกฎนี้ไว้เพราะไม่มีบัตรมาพิสูจน์ว่าเอาออกแล้วปลอดภัย
 
-## Parsing
+## การแปลงข้อมูล
 
-- The photo is found by walking JPEG markers, not by trimming, as `0x20` can be image data. No start or end marker means no
-  photo and a `PhotoFailure`.
-- A labelled address part such as `Road` is set only when a part starts with that Thai label. `RawParts` keeps every part.
-- `ThaiCardDate` fills nothing in. `AgeReferenceDate` is separate and only for counting an age.
-- `Sex` is cut out as a byte before decoding, and never guessed from the prefix.
+- หารูปถ่ายโดยไล่ตาม JPEG marker ไม่ใช่การตัดส่วนท้ายทิ้ง เพราะ `0x20` อาจเป็นข้อมูลภาพ ถ้าไม่มี marker เริ่มต้นหรือสิ้นสุดจะไม่มีรูปและมี `PhotoFailure`
+- ส่วนของที่อยู่ที่มีป้ายกำกับ เช่น `Road` จะมีค่าเฉพาะเมื่อส่วนนั้นขึ้นต้นด้วยป้ายภาษาไทยนั้น `RawParts` เก็บทุกส่วนไว้
+- `ThaiCardDate` ไม่เติมค่าให้ `AgeReferenceDate` แยกต่างหากและใช้สำหรับนับอายุเท่านั้น
+- `Sex` ถูกตัดออกมาเป็นไบต์ก่อนการถอดรหัส และไม่เดาจากคำนำหน้าชื่อ
 
-## Diagnostics
+## การวินิจฉัย
 
-`TraceEntry` is a readonly struct of enums and numbers, so it cannot hold card data by construction, which a reflection test
-checks. It travels on the result and on the exception, and no state stays behind between reads.
+`TraceEntry` เป็น readonly struct ของ enum และตัวเลข โครงสร้างจึงเก็บข้อมูลบัตรไม่ได้ และมีการทดสอบด้วย reflection ตรวจเรื่องนี้ trace เดินทางไปกับผลลัพธ์และ exception และไม่มีสถานะค้างระหว่างการอ่านแต่ละครั้ง
 
-## Monitor
+## การเฝ้าดูเครื่องอ่าน
 
-`ThaiIdCardMonitor` runs one PC/SC monitor per reader, so one missing reader does not stop the others. Monitor threads only
-queue: caller code runs on a thread pool thread, one event at a time. It reports the ATR and never connects to a card.
+`ThaiIdCardMonitor` รัน PC/SC monitor หนึ่งตัวต่อเครื่องอ่าน เครื่องอ่านที่หายไปหนึ่งเครื่องจึงไม่หยุดเครื่องอื่น thread ของ monitor ทำแค่เข้าคิว: โค้ดของผู้เรียกใช้รันบน thread pool thread ทีละ event มันรายงาน ATR และไม่เคยเชื่อมต่อกับบัตร
 
-## Where a real-card finding gets changed
+## จุดที่ต้องแก้เมื่อได้ข้อค้นพบจากบัตรจริง
 
-Most findings should change data or policy and nothing else.
+ข้อค้นพบส่วนใหญ่ควรแก้แค่ข้อมูลหรือ policy
 
-| Finding | Change |
+| ข้อค้นพบ | สิ่งที่ต้องแก้ |
 |---|---|
-| P2 behaviour, retry budget and delays, whether to use a transaction, whether to drain SELECT | `ReadPolicy` (`Workflow/ReadPolicy.cs`) |
-| A field moved, a length differs, a new AID, a range to read or to stop reading | `MoiProfile`, `NhsoProfile`, `AdmProfile` (`Card/CardProfile.cs`) |
-| What a Laser answer looks like | `AdmProfile` constants, marked `ASSUMPTION` |
-| A status word needs new handling | `ApduExchange`, with a simulator scenario |
-| A value turns out to have a confirmed meaning | A new property in the model, and in `PublicAPI.Unshipped.txt` |
+| พฤติกรรม P2, จำนวนการลองใหม่และการหน่วงเวลา, จะใช้ transaction หรือไม่, จะ drain SELECT หรือไม่ | `ReadPolicy` (`Workflow/ReadPolicy.cs`) |
+| field ย้ายตำแหน่ง, ความยาวต่างไป, AID ใหม่, ช่วงที่ต้องอ่านหรือเลิกอ่าน | `MoiProfile`, `NhsoProfile`, `AdmProfile` (`Card/CardProfile.cs`) |
+| คำตอบของ Laser มีลักษณะอย่างไร | ค่าคงที่ของ `AdmProfile` ที่ทำเครื่องหมาย `ASSUMPTION` |
+| status word ที่ต้องจัดการแบบใหม่ | `ApduExchange` พร้อม scenario ในตัวจำลอง |
+| ค่าที่ยืนยันความหมายได้แล้ว | property ใหม่ใน model และใน `PublicAPI.Unshipped.txt` |
 
-Tests that pin a behaviour to a card fact say so. The golden sequences in `tests/ThaiNationalIDCard.Tests/Golden` state what 2.x
-sent, and not what a card needs, so a real-card finding may rightly change them.
+การทดสอบที่ผูกพฤติกรรมกับข้อเท็จจริงของบัตรจะระบุไว้ golden sequence ใน `tests/ThaiNationalIDCard.Tests/Golden` บอกว่า 2.x ส่งอะไร ไม่ได้บอกว่าบัตรต้องการอะไร ข้อค้นพบจากบัตรจริงจึงอาจเปลี่ยนสิ่งเหล่านี้ได้อย่างถูกต้อง
 
-`docs/hardware-test.md` lists the open questions.
+คำถามที่ยังเปิดอยู่มีใน `docs/hardware-test.md`

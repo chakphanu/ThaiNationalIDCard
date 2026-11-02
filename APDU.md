@@ -1,20 +1,25 @@
-Get response 0x00, 0xC0, 0x00, 0x00 + Len in hex
+# คำสั่ง APDU
 
-INS 0xB0 | Read Bin
-INS 0xC0 | Get response
+เอกสารนี้แสดงชุดคำสั่งเดิมของสาย 2.x ไม่ใช่ข้อกำหนดจากหน่วยงานรัฐ และโปรเจกต์นี้ยังไม่เคยทดสอบกับบัตรจริง
 
+GET RESPONSE: `0x00, 0xC0, 0x00, 0x00` ตามด้วยความยาว (Len) เป็นเลขฐานสิบหก
 
-SELECT FILE
-CLA = 0X00
-INS = 0XA4
-P1 = 0x04 | Direct selection by DF name (data field=DF name)
-P2 = 0x00
-Lc = 0x08 ( len of DF Name )
+- INS `0xB0`: อ่านข้อมูล (Read Bin)
+- INS `0xC0`: GET RESPONSE
 
-Thailand Personal DF Name
-0xA0, 0X00, 0x00, 0x00, 0x54, 0x48, 0x00, 0x01
-  
- 
+## คำสั่ง SELECT FILE
+
+- CLA = `0X00`
+- INS = `0XA4`
+- P1 = `0x04`: เลือกโดยตรงด้วยชื่อ DF (data field คือชื่อ DF)
+- P2 = `0x00`
+- Lc = `0x08` (ความยาวของชื่อ DF)
+
+ชื่อ DF ของข้อมูลบุคคล (Thailand Personal DF Name):
+
+`0xA0, 0X00, 0x00, 0x00, 0x54, 0x48, 0x00, 0x01`
+
+## ตารางคำสั่ง
 
 |  Description  	| CLA  	| INS  	| P1   	| P2   	| Lc   	| Data 	| Le   	|
 |---------------	|------	|------	|------	|------	|------	|------	|------	|
@@ -49,3 +54,15 @@ Thailand Personal DF Name
 | Photo_Part18/20 | 0x80 	| 0xB0 	| 0x12 	| 0x6A 	| 0x02 	| 0x00 	| 0xFF 	|
 | Photo_Part19/20 | 0x80 	| 0xB0 	| 0x13 	| 0x69 	| 0x02 	| 0x00 	| 0xFF 	|
 | Photo_Part20/20 | 0x80 	| 0xB0 	| 0x14 	| 0x68 	| 0x02 	| 0x00 	| 0xFF 	|
+
+## ความแตกต่างใน v3
+
+v3 ไม่ได้ใช้ตารางนี้ตรง ๆ ค่าที่ใช้จริงอยู่ใน `src/ThaiNationalIDCard/Card/CardProfile.cs` และ `src/ThaiNationalIDCard/Card/MoiCardCommands.cs` ความแตกต่างที่สำคัญ:
+
+- GET RESPONSE: P2 เป็น `0x00` หรือ `0x01` ดูลำดับการลองใน `docs/architecture.md`
+- ที่อยู่: v3 อ่าน 160 ไบต์ (`80 B0 15 79 02 00 A0`) ไม่ใช่ `0x64`
+- รูปถ่าย: v3 อ่าน 5118 ไบต์โดยเพิ่ม chunk `80 B0 15 67 02 00 12` ต่อจาก 20 chunk ในตาราง
+- ชื่อ วันเกิด และเพศ: v3 อ่านรวมกันที่ `80 B0 00 11 02 00 D1` และวันออกบัตรกับวันหมดอายุอ่านรวมกันที่ `80 B0 01 67 02 00 10`
+- โหมด private ใช้ช่วงและ applet เพิ่มเติม: ดู `docs/privacy.md`
+
+ค่าเหล่านี้มาจากแหล่งข้อมูลสาธารณะ และโปรเจกต์นี้ยังไม่ได้ยืนยันกับบัตรจริง

@@ -1,10 +1,8 @@
 # ThaiNationalIDCard.Windows
 
-Windows helpers for the photo that [ThaiNationalIDCard](https://github.com/chakphanu/ThaiNationalIDCard/tree/v3) reads from
-a card. They turn the JPEG bytes from `ThaiIdCardData.GetPhoto()` into something a Windows UI can show. This package has no
-dependency on the card library and never talks to a card.
+Helper สำหรับ Windows ที่ใช้กับรูปถ่ายซึ่ง [ThaiNationalIDCard](https://github.com/chakphanu/ThaiNationalIDCard/tree/v3) อ่านจากบัตร แปลงไบต์ JPEG จาก `ThaiIdCardData.GetPhoto()` ให้ UI ของ Windows แสดงได้ แพ็กเกจนี้ไม่ขึ้นกับไลบรารีบัตร และไม่เคยสื่อสารกับบัตร
 
-**Status: 3.0.0-preview. Not tested with a photo from a real card, and in this repository its tests only run on Windows CI.**
+**สถานะ: 3.0.0-preview ยังไม่เคยทดสอบกับรูปถ่ายจากบัตรจริง ยังไม่เผยแพร่บน NuGet และใน repository นี้การทดสอบของแพ็กเกจรันบน Windows CI เท่านั้น** การทดสอบเหล่านั้นใช้ภาพเปล่าที่สร้างขึ้นเอง การที่ CI ผ่านจึงไม่ใช่หลักฐานด้านฮาร์ดแวร์
 
 ```csharp
 using ThaiNationalIDCard.Windows;
@@ -16,8 +14,6 @@ pictureBox.Image = card.GetPhoto()?.ToImage();
 imageControl.Source = card.GetPhoto()?.ToBitmapSource();
 ```
 
-`GetPhoto()` returns null when there is no photo, for example when `ReadOptions.IncludePhoto` was false. Both helpers throw
-`ArgumentException` for bytes that are not a JPEG they can decode.
+`GetPhoto()` คืน null เมื่อไม่มีรูปถ่าย เช่น เมื่อ `ReadOptions.IncludePhoto` เป็น false Helper ทั้งสองตัวโยน `ArgumentException` เมื่อไบต์ไม่ใช่ JPEG ที่ถอดรหัสได้
 
-Targets: `net10.0-windows`, `net48`. The photo is personal data: see
-[docs/privacy.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md).
+Target: `net10.0-windows`, `net48` รูปถ่ายเป็นข้อมูลส่วนบุคคล: ดู [docs/privacy.md](https://github.com/chakphanu/ThaiNationalIDCard/blob/v3/docs/privacy.md)

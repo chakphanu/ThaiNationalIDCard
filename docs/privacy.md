@@ -1,134 +1,92 @@
-# Privacy and law
+# ความเป็นส่วนตัวและกฎหมาย
 
-**Dated November 2026. This is not legal advice and it has not been reviewed by a lawyer.** It records what project research
-found in public sources, for the design of the library and for you to check. Laws, drafts and DOPA practice change, and the
-research found little from the most recent months. Ask a lawyer before you rely on any of it.
+**ลงวันที่พฤศจิกายน 2026 เอกสารนี้ไม่ใช่คำแนะนำทางกฎหมาย และยังไม่ผ่านการตรวจจากทนายความ** เอกสารนี้บันทึกสิ่งที่การวิจัยของโปรเจกต์พบจากแหล่งข้อมูลสาธารณะ เพื่อใช้ออกแบบไลบรารีและให้คุณตรวจสอบต่อ กฎหมาย ร่างกฎหมาย และแนวปฏิบัติของกรมการปกครอง (DOPA) เปลี่ยนแปลงได้ และการวิจัยพบข้อมูลของช่วงไม่กี่เดือนล่าสุดน้อยมาก ปรึกษาทนายความก่อนจะอาศัยข้อมูลใดในเอกสารนี้
 
-## Who is responsible
+## ใครเป็นผู้รับผิดชอบ
 
-This library is a tool in between. By the decision of the project owner, **the people who use it, on the side that reads a card
-and on the side that receives the data, are responsible for the holder's consent and for the law that applies.** They choose the
-mode for each read. That position is a project decision and not a legal conclusion, and it has not been reviewed by a lawyer.
-Whether the library's author has any role under the PDPA, and whether publishing a list of APDU commands raises an issue, are
-open questions.
+ไลบรารีนี้เป็นเครื่องมือตัวกลาง ตามการตัดสินใจของเจ้าของโปรเจกต์ **ผู้ที่นำไปใช้ ทั้งฝ่ายที่อ่านบัตรและฝ่ายที่รับข้อมูล เป็นผู้รับผิดชอบความยินยอมของผู้ถือบัตรและกฎหมายที่เกี่ยวข้อง** และเป็นผู้เลือกโหมดในการอ่านแต่ละครั้ง จุดยืนนี้เป็นการตัดสินใจของโปรเจกต์ ไม่ใช่ข้อสรุปทางกฎหมาย และยังไม่ผ่านการตรวจจากทนายความ ผู้เขียนไลบรารีมีบทบาทใดตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 หรือไม่ และการเผยแพร่รายการคำสั่ง APDU มีประเด็นหรือไม่ ยังเป็นคำถามที่เปิดอยู่
 
-## What each mode reads
+## แต่ละโหมดอ่านอะไร
 
-### `Public` (default)
+### `Public` (ค่าเริ่มต้น)
 
-From the MOI applet: `CitizenId`, Thai and English names, `BirthDate`, `Sex`, the address, `IssueDate`, `ExpiryDate`, `Issuer`, and
-the photo only with `IncludePhoto = true`.
+จาก applet MOI: `CitizenId`, ชื่อภาษาไทยและภาษาอังกฤษ, `BirthDate`, `Sex`, ที่อยู่, `IssueDate`, `ExpiryDate`, `Issuer` และรูปถ่ายเฉพาะเมื่อตั้ง `IncludePhoto = true`
 
 ### `PublicAndPrivate`
 
-Everything in `Public`, and these. Names stay by position wherever public sources disagree on the meaning, so nothing here claims
-more than the evidence does.
+ทุกอย่างใน `Public` และรายการต่อไปนี้ ชื่อจะอิงตำแหน่งในทุกจุดที่แหล่งข้อมูลสาธารณะตีความไม่ตรงกัน เพื่อไม่ให้อ้างเกินหลักฐาน
 
-| Property | Source | What public sources say |
+| Property | ที่มา | สิ่งที่แหล่งข้อมูลสาธารณะบอก |
 |---|---|---|
-| `Private.LaserId`, `AdmAppletDataRaw` | ADM applet, `80 00 00 00 07` and its GET RESPONSE | Public code reads a Laser ID here. The 7 byte header and 16 byte slot are an inference that fits several projects. No trace has been published |
-| `Private.Nhso.Raw0004` to `Raw015D` | NHSO applet, 9 ranges | Public code labels these as main and sub insurance, main and sub hospital, paid type, issue, expire, update, and change of hospital count. No source says whether they keep up with current entitlement, or whether every card has this applet |
-| `Private.CardVersionRaw` | MOI `0000-0003` | Labelled card version. Values across generations are not known |
-| `Private.MoiRaw00E2` | MOI `00E2-00F5` | Labels conflict, among them request number and registration code |
-| `Private.MoiRaw0177` | MOI `0177-0178` | Labels conflict: **religion** in some projects, card type in another, version in another. Not settled. It is not called `Religion` |
-| `Private.MoiRaw1619` | MOI `1619-1626` | Labels conflict, among them card number and reference number |
+| `Private.LaserId`, `AdmAppletDataRaw` | applet ADM, `80 00 00 00 07` และ GET RESPONSE ของคำสั่งนี้ | โค้ดสาธารณะอ่าน Laser ID จากตรงนี้ header 7 ไบต์และ slot 16 ไบต์เป็นการอนุมานที่เข้ากับหลายโปรเจกต์ ยังไม่มีการเผยแพร่ trace |
+| `Private.Nhso.Raw0004` ถึง `Raw015D` | applet NHSO, 9 ช่วง | โค้ดสาธารณะติดป้ายว่า สิทธิหลักและสิทธิรอง โรงพยาบาลหลักและโรงพยาบาลรอง ประเภทการจ่าย วันออก วันหมดอายุ วันปรับปรุง และจำนวนครั้งที่เปลี่ยนโรงพยาบาล ไม่มีแหล่งใดบอกว่าข้อมูลเหล่านี้ตามทันสิทธิปัจจุบันหรือไม่ หรือบัตรทุกใบมี applet นี้หรือไม่ |
+| `Private.CardVersionRaw` | MOI `0000-0003` | ติดป้ายว่าเวอร์ชันบัตร ไม่ทราบค่าในแต่ละรุ่นของบัตร |
+| `Private.MoiRaw00E2` | MOI `00E2-00F5` | ป้ายขัดกัน เช่น เลขคำขอ และรหัสการลงทะเบียน |
+| `Private.MoiRaw0177` | MOI `0177-0178` | ป้ายขัดกัน: **ศาสนา** ในบางโปรเจกต์ ประเภทบัตรในอีกโปรเจกต์ และเวอร์ชันในอีกโปรเจกต์ ยังไม่มีข้อสรุป จึงไม่ได้ตั้งชื่อว่า `Religion` |
+| `Private.MoiRaw1619` | MOI `1619-1626` | ป้ายขัดกัน เช่น หมายเลขบัตร และหมายเลขอ้างอิง |
 
-`Private.ChipDataRaw` exists in the API and **is always `NotRead`**. The only public source for chip data, `80 CA 9F 7F`, starts with
-a SELECT that names no applet, and what that leaves selected cannot be bounded without a real card. The guard refuses both
-commands in every mode.
+`Private.ChipDataRaw` มีอยู่ใน API และ**เป็น `NotRead` เสมอ** แหล่งข้อมูลสาธารณะเพียงแหล่งเดียวของข้อมูลชิป คือ `80 CA 9F 7F` เริ่มด้วย SELECT ที่ไม่ระบุ applet และถ้าไม่มีบัตรจริงก็จำกัดขอบเขตไม่ได้ว่าคำสั่งนั้นจะเลือกอะไรค้างไว้ guard ปฏิเสธทั้งสองคำสั่งในทุกโหมด
 
-A failure in private mode costs only that field. Nothing in private mode has been checked on a real card.
+ความล้มเหลวในโหมด private กระทบเฉพาะ field นั้น ทุกอย่างในโหมด private ยังไม่เคยตรวจกับบัตรจริง
 
-## What is never read, in any mode
+## สิ่งที่ไม่อ่านเลยในทุกโหมด
 
-A guard under the read logic refuses these, and the tests hold it to that.
+Guard ที่อยู่ใต้ตรรกะการอ่านปฏิเสธรายการเหล่านี้ และมีการทดสอบกำกับไว้
 
-| What | Why |
+| รายการ | เหตุผล |
 |---|---|
-| PIN and VERIFY: `80 20`, `80 B4` | Cards keep a retry counter, so this is a risk to the card, whatever the consent |
-| Fingerprint match: `B0 34`, and the Bio applet | A DOPA training document says the chip holds index fingerprints. This library has no use for them |
-| Write and life cycle commands | The library only reads |
-| `1627-173D` | One public project marks this "Unknown (Fingerprints?)" |
-| `015A-0166` | Labels conflict. Its length matches a citizen ID, so it may be data about an officer, a third party. That is an inference |
-| SELECT with no AID, `80 CA` | See chip data above |
-| Anything not on the allowlist | For example `0179-017A`, which conflicting sources call a length or unknown |
+| PIN และ VERIFY: `80 20`, `80 B4` | บัตรมีตัวนับจำนวนครั้งที่ลอง จึงเสี่ยงต่อบัตรไม่ว่าจะมีความยินยอมหรือไม่ |
+| การเทียบลายนิ้วมือ: `B0 34` และ applet Bio | เอกสารฝึกอบรมของกรมการปกครองระบุว่าชิปเก็บลายนิ้วมือนิ้วชี้ ไลบรารีนี้ไม่มีความจำเป็นต้องใช้ |
+| คำสั่งเขียนและ life cycle | ไลบรารีนี้อ่านอย่างเดียว |
+| `1627-173D` | โปรเจกต์สาธารณะหนึ่งทำเครื่องหมายช่วงนี้ว่า "Unknown (Fingerprints?)" |
+| `015A-0166` | ป้ายขัดกัน ความยาวเท่ากับเลขประจำตัวประชาชน จึงอาจเป็นข้อมูลของเจ้าหน้าที่ซึ่งเป็นบุคคลที่สาม ข้อนี้เป็นการอนุมาน |
+| SELECT ที่ไม่มี AID, `80 CA` | ดูเรื่องข้อมูลชิปด้านบน |
+| ทุกอย่างที่ไม่อยู่ใน allowlist | ตัวอย่างเช่น `0179-017A` ซึ่งแหล่งข้อมูลที่ขัดกันเรียกว่าความยาว หรือไม่ทราบ |
 
-## The law, as far as the research reads it
+## กฎหมาย เท่าที่การวิจัยอ่านได้
 
-**Identity Card Act.** As the text reads, section 7/1 provides for the card memory, and bars disclosing that data to anyone who did not
-make the card, except the general data on the card or where necessary under set conditions. Section 12 sets a penalty for accessing or disclosing data in that memory, other than the general
-data shown on the card under section 7, without the holder's consent: imprisonment up to 5 years, a fine up to 100,000 baht, or
-both. The wording the research had came from a PDF text layer with a watermark, so compare it with the original:
-[Act text](https://report.dopa.go.th/laws/document/1/22.pdf),
-[DOPA penalty table](https://www.bora.dopa.go.th/wp-content/uploads/2022/03/rate.pdf).
+**พ.ร.บ.บัตรประจำตัวประชาชน พ.ศ. 2526** ตามตัวบทที่อ่านได้ มาตรา 7/1 กำหนดเรื่องหน่วยความจำของบัตร และห้ามเปิดเผยข้อมูลนั้นต่อผู้ที่ไม่ได้จัดทำ เว้นแต่ข้อมูลทั่วไปบนบัตรหรือกรณีจำเป็นตามเงื่อนไขที่กำหนด มาตรา 12 กำหนดโทษสำหรับการเข้าถึงหรือเปิดเผยข้อมูลในหน่วยความจำนั้น ที่ไม่ใช่ข้อมูลทั่วไปที่ปรากฏบนบัตรตามมาตรา 7 โดยไม่ได้รับความยินยอมจากผู้ถือบัตร คือจำคุกไม่เกิน 5 ปี ปรับไม่เกิน 100,000 บาท หรือทั้งจำทั้งปรับ ข้อยกเว้นตามตัวบทที่การวิจัยอ่านได้คือ การเข้าถึงตามมาตรา 10 คำสั่งศาล และการเข้าถึงระหว่างหน่วยงานของรัฐที่จำเป็นต่อการปฏิบัติหน้าที่ ถ้อยคำที่การวิจัยใช้มาจากชั้นข้อความของไฟล์ PDF ที่มีลายน้ำ จึงควรเทียบกับต้นฉบับ: [ตัวบท พ.ร.บ.](https://report.dopa.go.th/laws/document/1/22.pdf), [ตารางอัตราโทษของกรมการปกครอง](https://www.bora.dopa.go.th/wp-content/uploads/2022/03/rate.pdf)
 
-Where `Public` mode stands against that line is **an inference, not a finding**: the listed items probably fall under the general
-data exception, but sex and the expiry date are not in the minimum list of section 7, so a lawyer should look at them. The items
-of private mode are outside that line by the same reading, which is why they need an explicit choice.
+โหมด `Public` อยู่ตรงไหนเมื่อเทียบกับเส้นแบ่งนี้เป็น**การอนุมาน ไม่ใช่ข้อค้นพบ**: รายการที่ระบุไว้น่าจะอยู่ในข้อยกเว้นเรื่องข้อมูลทั่วไป แต่เพศและวันหมดอายุไม่อยู่ในรายการขั้นต่ำของมาตรา 7 จึงควรให้ทนายความพิจารณา รายการของโหมด private อยู่นอกเส้นแบ่งนี้ตามการอ่านแบบเดียวกัน จึงต้องเลือกเปิดเอง
 
-Section 15 bis, on unlawfully holding another person's card, is a matter for kiosks that keep a card
-([Act text](https://report.dopa.go.th/laws/document/1/22.pdf)).
+มาตรา 15 ทวิ เรื่องการยึดถือบัตรของผู้อื่นโดยมิชอบ เป็นประเด็นสำหรับ kiosk ที่เก็บบัตรไว้ ([ตัวบท พ.ร.บ.](https://report.dopa.go.th/laws/document/1/22.pdf))
 
-**PDPA.** Section 26 names religion and health data among sensitive data
-([section 26](https://pdpathailand.com/pdpa/content/article26.php)). Since `MoiRaw0177` may be religion and the NHSO ranges concern
-health coverage, treat both as sensitive until shown otherwise. The status of the chip photo under section 26 is open.
+**พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)** มาตรา 26 ระบุข้อมูลศาสนาและสุขภาพไว้ในกลุ่มข้อมูลอ่อนไหว ([มาตรา 26](https://pdpathailand.com/pdpa/content/article26.php)) เนื่องจาก `MoiRaw0177` อาจเป็นศาสนา และช่วง NHSO เกี่ยวกับสิทธิด้านสุขภาพ ให้ถือว่าทั้งสองเป็นข้อมูลอ่อนไหวจนกว่าจะแสดงได้ว่าไม่ใช่ สถานะของรูปถ่ายในชิปตามมาตรา 26 ยังเป็นคำถามที่เปิดอยู่
 
-**Permission from DOPA.** Whether an application reading through PC/SC needs permission is the most important open question, and
-this library does not claim that it does or that it does not. A secondary source reports a DOPA notice of 8 October 2018 that lets
-private parties with a need read with consent, after accepting conditions in writing
-([Line Today](https://today.line.me/th/v3/article/kE8NOno)). The research could not find the notice itself. In March 2026 DOPA
-withdrew a political party's use of DOPA-Digital ID and of a card reading program, after reports of a leak
-([Thai PBS](https://www.thaipbs.or.th/news/content/503362)). **Commercial users should check with DOPA.**
+**การขออนุญาตจากกรมการปกครอง** แอปพลิเคชันที่อ่านผ่าน PC/SC ต้องขออนุญาตหรือไม่เป็นคำถามที่เปิดอยู่ซึ่งสำคัญที่สุด และไลบรารีนี้ไม่ได้อ้างว่าต้องหรือไม่ต้อง แหล่งข้อมูลทุติยภูมิรายงานว่ามีประกาศของกรมการปกครองลงวันที่ 8 ตุลาคม 2018 ที่ให้เอกชนซึ่งมีความจำเป็นอ่านได้เมื่อได้รับความยินยอม หลังจากรับเงื่อนไขเป็นหนังสือ ([Line Today](https://today.line.me/th/v3/article/kE8NOno)) การวิจัยไม่พบตัวประกาศ ในเดือนมีนาคม 2026 กรมการปกครองยกเลิกการใช้ DOPA-Digital ID และโปรแกรมอ่านบัตรของพรรคการเมืองแห่งหนึ่ง หลังมีรายงานข้อมูลรั่วไหล ([Thai PBS](https://www.thaipbs.or.th/news/content/503362)) **ผู้ใช้เชิงพาณิชย์ควรตรวจสอบกับกรมการปกครอง**
 
-**Still changing.** A draft ministerial regulation of June 2026 would change fingerprint collection and define two card forms
-([Thai Post](https://www.thaipost.net/general-news/1012060/)), and an amendment to the PDPA is also under discussion
-([Chambers 2026](https://practiceguides.chambers.com/practice-guides/data-protection-privacy-2026/thailand/trends-and-developments)).
-The research found no outcome of the draft. Check [law.go.th](https://www.law.go.th/) and
-[bora.dopa.go.th](https://www.bora.dopa.go.th/).
+**เรื่องที่ยังเปลี่ยนแปลงอยู่** ร่างกฎกระทรวงเดือนมิถุนายน 2026 จะเปลี่ยนการเก็บลายนิ้วมือและกำหนดรูปแบบบัตรสองแบบ ([Thai Post](https://www.thaipost.net/general-news/1012060/)) และกำลังมีการหารือเรื่องการแก้ไข PDPA ด้วย ([Chambers 2026](https://practiceguides.chambers.com/practice-guides/data-protection-privacy-2026/thailand/trends-and-developments)) การวิจัยไม่พบผลของร่างดังกล่าว ตรวจสอบได้ที่ [law.go.th](https://www.law.go.th/) และ [bora.dopa.go.th](https://www.bora.dopa.go.th/)
 
-## Reading a card is not proof of identity
+## การอ่านบัตรไม่ใช่การพิสูจน์ตัวตน
 
-The result is what a card returned. `90 00` and a valid check digit show that a card answered, and that a number has the right
-form. They do not show the card is genuine, valid today, or held by the person in front of you.
-[ETDA guidance](https://www.etda.or.th/getattachment/newsevents/pr-news/news-standard/23022566/Digital-ID-Infographic_V3-IAL.pdf.aspx?lang=th-TH)
-treats checking the data, checking the card's status and binding it to a person as separate steps. Card status is an online service
-for authorized agencies ([Thansettakij](https://www.thansettakij.com/politics/651988)). The research found no public evidence that an
-independent library can verify chip data as genuine, and no report of signatures or card authentication on current cards either.
-That means unknown, not absent. So there is no `IsVerified` or `IsGenuine` here. `PersonCategoryCode` is the raw first digit: do not
-read nationality, age or current address from it.
+ผลลัพธ์คือสิ่งที่บัตรส่งกลับมา `90 00` และเลขตรวจสอบที่ถูกต้องแสดงว่ามีบัตรตอบกลับ และเลขมีรูปแบบถูกต้อง ไม่ได้แสดงว่าบัตรเป็นของแท้ ใช้ได้ในวันนี้ หรือเป็นของคนที่อยู่ตรงหน้า [แนวทางของ ETDA](https://www.etda.or.th/getattachment/newsevents/pr-news/news-standard/23022566/Digital-ID-Infographic_V3-IAL.pdf.aspx?lang=th-TH) แยกการตรวจข้อมูล การตรวจสถานะบัตร และการผูกกับตัวบุคคลออกเป็นคนละขั้นตอน สถานะบัตรเป็นบริการออนไลน์สำหรับหน่วยงานที่ได้รับอนุญาต ([Thansettakij](https://www.thansettakij.com/politics/651988)) การวิจัยไม่พบหลักฐานสาธารณะว่าไลบรารีอิสระตรวจข้อมูลชิปว่าเป็นของแท้ได้ และไม่พบรายงานเรื่องลายเซ็นหรือการยืนยันตัวตนของบัตรในบัตรปัจจุบันเช่นกัน นั่นหมายถึงไม่ทราบ ไม่ได้หมายถึงไม่มี ไลบรารีนี้จึงไม่มี `IsVerified` หรือ `IsGenuine` `PersonCategoryCode` คือเลขหลักแรกแบบดิบ: อย่าอนุมานสัญชาติ อายุ หรือที่อยู่ปัจจุบันจากค่านี้
 
-## Laser ID
+## เลข Laser ID
 
-Views conflict. DOPA has called it a card control number and not personal data
-([Thai PBS](https://www.thaipbs.or.th/news/content/502377)). A 2026 preprint reports that a citizen ID together with a Laser ID could
-get past GDX authentication ([arXiv 2604.23538](https://arxiv.org/html/2604.23538)). Whatever its legal status,
-treat it as a secret: this library reads it only in private mode and never puts it in a log or a trace. Do not log or store it.
+ความเห็นขัดกัน กรมการปกครองเคยระบุว่าเป็นเลขควบคุมบัตรและไม่ใช่ข้อมูลส่วนบุคคล ([Thai PBS](https://www.thaipbs.or.th/news/content/502377)) งาน preprint ปี 2026 รายงานว่าเลขประจำตัวประชาชนร่วมกับ Laser ID อาจผ่านการยืนยันตัวตนของ GDX ได้ ([arXiv 2604.23538](https://arxiv.org/html/2604.23538)) ไม่ว่าสถานะทางกฎหมายจะเป็นอย่างไร ให้ถือเป็นความลับ: ไลบรารีนี้อ่านเฉพาะในโหมด private และไม่ใส่ลงใน log หรือ trace อย่า log หรือเก็บค่านี้
 
-## What the library does and does not do for you
+## สิ่งที่ไลบรารีทำและไม่ทำให้คุณ
 
-Tests hold it to these:
+มีการทดสอบกำกับเรื่องเหล่านี้:
 
-- `ToString()` of the data types, exception messages, diagnostics and the output of `thaiid-diagnose` hold no card data
-- `TraceEntry` holds only enums and numbers
-- the library has no logging at all
-- `Public` mode does not touch private ranges, and no mode touches the forbidden ones
-- the samples hold no real data, store nothing, and the console sample masks the citizen ID by default
+- `ToString()` ของ type ข้อมูล ข้อความของ exception, diagnostics และผลลัพธ์ของ `thaiid-diagnose` ไม่มีข้อมูลบัตร
+- `TraceEntry` เก็บเฉพาะ enum และตัวเลข
+- ไลบรารีไม่มีการ log เลย
+- โหมด `Public` ไม่แตะช่วง private และไม่มีโหมดใดแตะช่วงต้องห้าม
+- ตัวอย่างไม่มีข้อมูลจริง ไม่เก็บอะไรไว้ และตัวอย่าง console ปิดบังเลขประจำตัวประชาชนเป็นค่าเริ่มต้น
 
-It cannot do these:
+ที่ทำไม่ได้:
 
-- Clearing buffers is best effort. Managed memory gives no guarantee, and strings cannot be cleared
-- Once your code has a value, what happens to it is yours to decide
-- Reader names can hold a device serial. Serials are removed from diagnostics on a best effort basis, since real names have not been
-  seen here
+- การล้าง buffer ทำเท่าที่ทำได้ managed memory ไม่มีการรับประกัน และ string ล้างไม่ได้
+- เมื่อโค้ดของคุณได้ค่าไปแล้ว จะทำอะไรต่อเป็นการตัดสินใจของคุณ
+- ชื่อเครื่องอ่านอาจมีหมายเลขซีเรียลของอุปกรณ์ หมายเลขซีเรียลถูกลบออกจาก diagnostics เท่าที่ทำได้ เพราะยังไม่เคยเห็นชื่อจริงของเครื่องอ่าน
 
-## If you build on this
+## ถ้าคุณพัฒนาต่อจากไลบรารีนี้
 
-This is a starting point and not a compliance list.
+นี่เป็นจุดเริ่มต้น ไม่ใช่รายการสำหรับปฏิบัติตามกฎหมาย
 
-- Read only what your purpose needs: `Public` without the photo if that is enough. Choose `PublicAndPrivate` per read and per holder,
-  never as a default.
-- Get and record consent before a read, in the way your lawyer advises. How to record consent under section 12 is an open question.
-- Do not write card data to logs, temp files or analytics, and do not send it anywhere the holder has not agreed to.
-- Do not treat a read as identity verification.
-- If you collect data, you may have PDPA duties of your own. A person's card image in a public issue is personal data too, so never
-  paste real card values or photos into a bug report. `thaiid-diagnose` exists so that you need not.
+- อ่านเฉพาะที่จุดประสงค์ของคุณต้องใช้: ใช้ `Public` โดยไม่มีรูปถ่ายถ้าเพียงพอ เลือก `PublicAndPrivate` ทีละการอ่านและทีละผู้ถือบัตร อย่าตั้งเป็นค่าเริ่มต้น
+- ขอและบันทึกความยินยอมก่อนการอ่าน ตามวิธีที่ทนายความของคุณแนะนำ วิธีบันทึกความยินยอมตามมาตรา 12 ยังเป็นคำถามที่เปิดอยู่
+- อย่าเขียนข้อมูลบัตรลงใน log ไฟล์ชั่วคราว หรือ analytics และอย่าส่งไปที่ใดที่ผู้ถือบัตรไม่ได้ตกลงด้วย
+- อย่าถือว่าการอ่านเป็นการพิสูจน์ตัวตน
+- ถ้าคุณเก็บข้อมูล คุณอาจมีหน้าที่ของตัวเองตาม PDPA ภาพบัตรของบุคคลใน issue สาธารณะก็เป็นข้อมูลส่วนบุคคลเช่นกัน จึงห้ามวางค่าจากบัตรจริงหรือรูปถ่ายลงในรายงานบั๊ก `thaiid-diagnose` มีไว้เพื่อให้คุณไม่ต้องทำเช่นนั้น
