@@ -114,3 +114,11 @@ UpgradeLog*.XML
 \.vs/ThaiNationalIDCard/v15/Server/sqlite3/storage\.ide-shm
 
 \.vs/ThaiNationalIDCard/v15/Server/sqlite3/storage\.ide-wal
+
+# release/2.x: SDK-style build output, IDE state and packages must not be committed
+.vs/
+[Bb]in/
+[Oo]bj/
+*.nupkg
+*.snupkg
+TestResults/
