@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <Deterministic>true</Deterministic>
-    <Version>3.0.0</Version>
+    <Version>3.0.0-preview.1</Version>
     <Authors>chakphanu</Authors>
     <Copyright>Copyright (c) 2013, chakphanu</Copyright>
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0;net8.0;netstandard2.0</TargetFrameworks>
     <RootNamespace>ThaiNationalIDCard</RootNamespace>
     <AssemblyName>ThaiNationalIDCard</AssemblyName>
 
@@ -37,7 +37,7 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
   </ItemGroup>
 
-  <!-- TIS-620 decoding: CodePagesEncodingProvider is built into net8.0, a package on netstandard2.0. -->
+  <!-- TIS-620 decoding: CodePagesEncodingProvider is built into net8.0 and later, a package on netstandard2.0. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Text.Encoding.CodePages" />
   </ItemGroup>
