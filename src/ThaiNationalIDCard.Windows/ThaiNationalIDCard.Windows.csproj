@@ -4,12 +4,46 @@
     <TargetFrameworks>net10.0-windows;net48</TargetFrameworks>
     <RootNamespace>ThaiNationalIDCard.Windows</RootNamespace>
     <AssemblyName>ThaiNationalIDCard.Windows</AssemblyName>
-    <!-- Placeholder: not packed until phase 4 adds the real helper. -->
-    <IsPackable>false</IsPackable>
+    <!-- System.Drawing comes with Windows Forms and BitmapSource with WPF. There is no XAML and no UI here. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+
+    <!-- ThrowIfNull does not exist on net48, which this library also targets. -->
+    <NoWarn>$(NoWarn);CA1510</NoWarn>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata. Publishing is a manual decision, nothing here does it. -->
+  <PropertyGroup>
+    <PackageId>ThaiNationalIDCard.Windows</PackageId>
+    <Description>Windows helpers that turn the JPEG bytes from ThaiIdCardData.GetPhoto() into a System.Drawing.Image or a WPF BitmapSource. Preview: not tested with a photo from a real card yet.</Description>
+    <PackageTags>thai;thailand;national-id;smartcard;photo;winforms;wpf</PackageTags>
+    <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/chakphanu/ThaiNationalIDCard</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/chakphanu/ThaiNationalIDCard</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ThaiNationalIDCard\ThaiNationalIDCard.csproj" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ThaiNationalIDCard.Windows.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="PublicAPI\PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI\PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

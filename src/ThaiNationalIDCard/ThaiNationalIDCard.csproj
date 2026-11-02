@@ -13,8 +13,8 @@
   <PropertyGroup>
     <PackageId>ThaiNationalIDCard</PackageId>
     <Authors>chakphanu</Authors>
-    <Description>Read data and photo from a Thai National ID smartcard (citizen id, Thai and English name, birth date, address, issue/expire date, photo) through a PC/SC reader.</Description>
-    <PackageTags>thai;thailand;national-id;idcard;smartcard;pcsc;nfc;reader</PackageTags>
+    <Description>Reads a Thai national ID card through PC/SC, with a choice of what to read. Public mode is the default, and private mode is a separate explicit choice. Reading is not proof of identity, and the caller is responsible for the holder's consent. Preview: not tested on a real card yet.</Description>
+    <PackageTags>thai;thailand;national-id;idcard;smartcard;pcsc</PackageTags>
     <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/chakphanu/ThaiNationalIDCard</PackageProjectUrl>

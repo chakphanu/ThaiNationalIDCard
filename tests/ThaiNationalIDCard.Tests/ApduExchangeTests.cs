@@ -601,7 +601,7 @@ namespace ThaiNationalIDCard.Tests
         [Fact]
         public void Every_command_of_every_mode_passed_the_guard()
         {
-            foreach (SimReaderMode mode in Enum.GetValues<SimReaderMode>())
+            foreach (SimReaderMode mode in Enum.GetValues(typeof(SimReaderMode)))
             {
                 foreach (CommandPolicy policy in new[] { CommandPolicy.Public, CommandPolicy.PublicAndPrivate })
                 {

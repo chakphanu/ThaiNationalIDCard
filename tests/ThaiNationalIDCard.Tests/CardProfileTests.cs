@@ -45,8 +45,8 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(
                 new[] { CardFieldId.MoiRaw0000, CardFieldId.MoiRaw00E2, CardFieldId.MoiRaw0177, CardFieldId.MoiRaw1619 },
                 MoiProfile.PublicAndPrivate.Fields.Where(f => f.IsPrivate).Select(f => f.Id));
-            Assert.All(Enum.GetNames<CardFieldId>(), name => Assert.DoesNotContain("Religion", name, StringComparison.OrdinalIgnoreCase));
-            Assert.All(Enum.GetNames<CardFieldId>(), name => Assert.DoesNotContain("Laser", name, StringComparison.OrdinalIgnoreCase));
+            Assert.All(Enum.GetNames(typeof(CardFieldId)), name => Assert.DoesNotContain("Religion", name, StringComparison.OrdinalIgnoreCase));
+            Assert.All(Enum.GetNames(typeof(CardFieldId)), name => Assert.DoesNotContain("Laser", name, StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact]

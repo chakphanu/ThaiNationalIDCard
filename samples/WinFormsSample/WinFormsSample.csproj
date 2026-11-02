@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>ThaiNationalIDCard.WinFormsSample</RootNamespace>
+    <AssemblyName>ThaiNationalIDCard.WinFormsSample</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ThaiNationalIDCard\ThaiNationalIDCard.csproj" />
+    <ProjectReference Include="..\..\src\ThaiNationalIDCard.Windows\ThaiNationalIDCard.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

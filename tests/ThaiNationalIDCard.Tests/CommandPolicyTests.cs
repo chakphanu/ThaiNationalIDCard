@@ -43,9 +43,9 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
-        public void Chip_data_sequence_stays_rejected_until_step_9_rechecks_its_select()
+        public void Chip_data_sequence_stays_rejected()
         {
-            // TODO(step 9): the plan requires re-checking the chip data SELECT against source before adding it.
+            // The SELECT names no applet and what it leaves selected cannot be bounded without a real card. See CommandPolicy.
             byte[] selectWithoutAid = { 0x00, 0xA4, 0x04, 0x00 };
             byte[] selectEmptyAid = { 0x00, 0xA4, 0x04, 0x00, 0x00 };
             byte[] getData = { 0x80, 0xCA, 0x9F, 0x7F, 0x2D };

@@ -1,0 +1,4 @@
+#nullable enable
+static ThaiNationalIDCard.Windows.ThaiIdCardPhotoExtensions.ToBitmapSource(this byte[]! jpeg) -> System.Windows.Media.Imaging.BitmapSource!
+static ThaiNationalIDCard.Windows.ThaiIdCardPhotoExtensions.ToImage(this byte[]! jpeg) -> System.Drawing.Image!
+ThaiNationalIDCard.Windows.ThaiIdCardPhotoExtensions

@@ -3,7 +3,8 @@
 **Nothing in this project has been tested on real hardware yet.** Every read sequence, status word, P2 rule and field
 layout in v3 comes from public code and from reasoning about it. The test suite runs against a simulator, so it shows
 that the logic matches its assumptions and not that the assumptions are right. v3 stays at `3.0.0-preview.N` until a real
-card and reader have confirmed them.
+card and reader have confirmed them. The same goes for `ThaiIdCardMonitor`, the `ThaiNationalIDCard.Windows` helpers and both
+samples: none of them has seen a reader, a card or a real photo.
 
 `thaiid-diagnose` exists to collect that evidence. It reads a card and prints what happened, with no card content.
 
@@ -13,7 +14,8 @@ card and reader have confirmed them.
   for confirmation, because it also has to run unattended.
 - `--mode private` reads extra areas of the chip. Public sources disagree on what they hold, and they may include
   sensitive data. Thai law (Section 12 of the Identity Card Act, and the PDPA) may apply to reading them without consent.
-  This was noted from project research on 2026-11-02, has not been reviewed by a lawyer, and is not legal advice.
+  This was noted from project research on 2026-11-02, has not been reviewed by a lawyer, and is not legal advice. See
+  `docs/privacy.md`.
 - The tool never sends a PIN or VERIFY command, never reads the fingerprint areas and never writes. A guard below the
   read logic refuses those commands in every mode.
 - If the first P2 value fails, the tool re-selects and reads once more with the other value. No public source reports
@@ -23,8 +25,8 @@ card and reader have confirmed them.
 ## Run it
 
 Linux needs the PC/SC service: `sudo apt install pcscd libpcsclite1` (Debian, Ubuntu) or `sudo dnf install pcsc-lite`
-(Fedora), then `sudo systemctl start pcscd`. Windows has it built in. Nothing is published yet, so build it from this
-repository for now.
+(Fedora), then `sudo systemctl start pcscd`. Windows has it built in. macOS has a system PC/SC framework that the PCSC package
+calls, and the tool has not been run there. Nothing is published yet, so build it from this repository for now.
 
 With a .NET 10 SDK:
 
@@ -108,12 +110,14 @@ card, and only the conclusion should be sent back, never the value.
 | Does a card ask `6C 17` for that command? The guard refuses the resend, so the field fails. | Yes: `sw=6C17` and `FollowUpRejected` |
 | Is the value in that answer the Laser ID, 12 letters or digits with 4 NUL? | Partly: `AppletDataShape` shows the shape fits, the meaning needs a separate approved test |
 | What does SELECT with no AID (`00 A4 04 00`) choose, and is it safe to follow with `80 CA 9F 7F`? Chip data stays out until a separate approved test answers this. | No: the guard refuses both in every mode |
-| Do `CardInserted` and `CardRemoved` arrive for every insert and removal on a real reader, again and again? Issue #16 reports a card read only once. Its cause is not known, and the monitor tests do not show it is gone. | No: the tool does not use `ThaiIdCardMonitor`, so this needs a separate run |
+| Do `CardInserted` and `CardRemoved` arrive for every insert and removal on a real reader, again and again? Issue #16 reports a card read only once. Its cause is not known, and the monitor tests do not show it is gone. | No: the tool does not use `ThaiIdCardMonitor`, so this needs a separate run, for example with `samples/WinFormsSample` |
 | Does the real monitor report a card already in the reader at the start, and what does unplugging a reader raise? | No: same |
+| Do `ToImage()` and `ToBitmapSource()` decode the JPEG a real card holds? Their tests use blank images made on Windows. | No: try `samples/WinFormsSample`, and report only whether the photo shows |
 | Are real reader names and the serial removal right? | Yes: check the `reader:` line against the real name |
 | Are the retry delays (100, 300, 900 ms) enough? | Partly: `Retry` events |
 
 ## If a finding changes something
 
 Read behaviour belongs in `ReadPolicy` (`src/ThaiNationalIDCard/Workflow/ReadPolicy.cs`) and layout in the profiles
-(`src/ThaiNationalIDCard/Card/CardProfile.cs`). Most findings should need a change there and nowhere else.
+(`src/ThaiNationalIDCard/Card/CardProfile.cs`). Most findings should need a change there and nowhere else. `docs/architecture.md`
+has the full list.

@@ -18,7 +18,9 @@ namespace ThaiNationalIDCard.Tests
             Assert.False(date.IsLifetime);
             Assert.Equal(new DateTime(1997, 1, 31), date.ToDateTime());
             Assert.Equal(DateTimeKind.Unspecified, date.ToDateTime()!.Value.Kind);
+#if NET8_0_OR_GREATER
             Assert.Equal(new DateOnly(1997, 1, 31), date.ToDateOnly());
+#endif
             Assert.Equal(new DateTime(1997, 1, 31), date.AgeReferenceDate);
             Assert.True(date.IsWellFormed);
         }
@@ -32,7 +34,9 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(3, date.Month);
             Assert.Null(date.Day);
             Assert.Null(date.ToDateTime());
+#if NET8_0_OR_GREATER
             Assert.Null(date.ToDateOnly());
+#endif
             Assert.True(date.IsWellFormed);
         }
 
@@ -57,7 +61,9 @@ namespace ThaiNationalIDCard.Tests
 
             Assert.Null(date.Year);
             Assert.Null(date.ToDateTime());
+#if NET8_0_OR_GREATER
             Assert.Null(date.ToDateOnly());
+#endif
             Assert.Null(date.AgeReferenceDate);
             Assert.False(date.IsWellFormed);
             Assert.Equal(raw, date.Raw);
@@ -73,7 +79,9 @@ namespace ThaiNationalIDCard.Tests
             Assert.Null(date.Month);
             Assert.Null(date.Day);
             Assert.Null(date.ToDateTime());
+#if NET8_0_OR_GREATER
             Assert.Null(date.ToDateOnly());
+#endif
             Assert.Null(date.AgeReferenceDate);
             Assert.Equal("99999999", date.Raw);
         }
@@ -124,7 +132,9 @@ namespace ThaiNationalIDCard.Tests
             Assert.NotNull(date.Month);
             Assert.NotNull(date.Day);
             Assert.Null(date.ToDateTime());
+#if NET8_0_OR_GREATER
             Assert.Null(date.ToDateOnly());
+#endif
             Assert.Null(date.AgeReferenceDate);
             Assert.False(date.IsWellFormed);
         }

@@ -476,7 +476,7 @@ namespace ThaiNationalIDCard.Tests
                 Atr = ApduText.Bytes(atrHex),
                 GetResponseP2 = required,
                 SelectAnswer = select,
-                WrongP2Response = answer == "garbage9000" ? garbage : ApduText.Bytes(answer.Replace("lost", string.Empty, StringComparison.Ordinal)),
+                WrongP2Response = answer == "garbage9000" ? garbage : ApduText.Bytes(answer.StartsWith("lost", StringComparison.Ordinal) ? answer.Substring("lost".Length) : answer),
                 WrongP2LosesPending = answer.StartsWith("lost", StringComparison.Ordinal),
             };
             bool rule = atrHex.StartsWith("3b67", StringComparison.Ordinal);

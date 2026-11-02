@@ -50,7 +50,7 @@ namespace ThaiNationalIDCard.Tests
             List<string> one = GoldenSequence.Load(GoldenSequence.P2One);
             List<string> direct = GoldenSequence.Load(GoldenSequence.Direct);
 
-            Assert.Equal(zero.Select(c => GoldenSequence.IsGetResponse(c) ? string.Concat("00c00001", c.AsSpan(8)) : c), one);
+            Assert.Equal(zero.Select(c => GoldenSequence.IsGetResponse(c) ? "00c00001" + c.Substring(8) : c), one);
             Assert.Equal(zero.Where(c => !GoldenSequence.IsGetResponse(c)), direct);
         }
 

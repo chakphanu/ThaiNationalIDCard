@@ -1,0 +1,80 @@
+name: ci
+
+# v3 line: build, test and pack. No publish step and no secrets. Publishing stays a manual decision.
+on:
+  push:
+    branches: [ "v3" ]
+  pull_request:
+    branches: [ "v3" ]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  ubuntu:
+    name: ubuntu (build, test, format, pack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore ThaiNationalIDCard.sln
+
+      # Windows targets compile here against reference assemblies, and they cannot run. CI=true turns warnings into errors.
+      - name: Build
+        run: dotnet build ThaiNationalIDCard.sln -c Release --no-restore
+
+      # net10.0 and net8.0. libpcsclite is not installed on purpose: the tests use fakes, and the few that touch the real PCSC
+      # package accept a missing native library as a library exception. Windows-only test projects are passed over here.
+      - name: Test
+        run: dotnet test --solution ThaiNationalIDCard.sln -c Release --no-build
+
+      - name: Format
+        run: dotnet format ThaiNationalIDCard.sln --verify-no-changes --no-restore
+
+      - name: Pack
+        run: |
+          dotnet pack src/ThaiNationalIDCard/ThaiNationalIDCard.csproj -c Release --no-build -o artifacts
+          dotnet pack src/ThaiNationalIDCard.Windows/ThaiNationalIDCard.Windows.csproj -c Release --no-build -o artifacts
+          dotnet pack tools/ThaiNationalIDCard.Diagnose/ThaiNationalIDCard.Diagnose.csproj -c Release --no-build -o artifacts
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          if-no-files-found: error
+
+  windows:
+    name: windows (build everything, test including net48 and the Windows helper)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore ThaiNationalIDCard.sln
+
+      - name: Build
+        run: dotnet build ThaiNationalIDCard.sln -c Release --no-restore
+
+      # On Windows the main tests add net48, which takes the netstandard2.0 asset of the library, and the helper tests run for
+      # net10.0-windows and net48.
+      - name: Test
+        run: dotnet test --solution ThaiNationalIDCard.sln -c Release --no-build
