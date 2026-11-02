@@ -11,7 +11,7 @@ namespace ThaiNationalIDCard.Tests
         public const string Cid = "80b0000402000d";
         public const string PersonInfo = "80b000110200d1";
         public const string Address = "80b01579020064";
-        public const string IssueExpire = "80b00167020012";
+        public const string IssueExpire = "80b00167020010";
         public const string Issuer = "80b000f6020064";
 
         public const string SyntheticCitizenId = "1234567890123";
@@ -56,15 +56,16 @@ namespace ThaiNationalIDCard.Tests
 
         public const string AddressText = "99/9#5#Soi Test#Test Road##Test Tambol#Test Amphur#Test Province";
 
-        /// <summary>Synthetic EF_CARD_ISSUE_EXPIRE text: issue + expire (BE yyyyMMdd), padded to 18 chars.</summary>
+        /// <summary>Synthetic EF_CARD_ISSUE_EXPIRE text: issue + expire (BE yyyyMMdd), the 16 bytes Le 0x10 returns.</summary>
         public static string IssueExpireText(string issueBe = "25600131", string expireBe = "25690130") =>
-            (issueBe + expireBe).PadRight(18);
+            issueBe + expireBe;
 
         /// <summary>
         /// Scripts a complete card: select + the five text files. Photo chunks are scripted when withPhoto is true.
         /// The ATR decides the command set the library will use (3B 67 = Type01).
         /// </summary>
-        public static FakeReader NewCard(bool type01 = false, bool withPhoto = false, bool directAnswer = false)
+        public static FakeReader NewCard(bool type01 = false, bool withPhoto = false, bool directAnswer = false,
+            string issueBe = "25600131", string expireBe = "25690130")
         {
             var fake = new FakeReader { DirectAnswer = directAnswer };
             fake.Atr = type01 ? new byte[] { 0x3B, 0x67, 0x00, 0x00 } : new byte[] { 0x3B, 0x79, 0x18, 0x00 };
@@ -72,7 +73,7 @@ namespace ThaiNationalIDCard.Tests
             fake.OnData(Cid, Tis(SyntheticCitizenId), type01);
             fake.OnData(PersonInfo, Tis(PersonInfoText()), type01);
             fake.OnData(Address, Tis(AddressText.PadRight(100)), type01);
-            fake.OnData(IssueExpire, Tis(IssueExpireText()), type01);
+            fake.OnData(IssueExpire, Tis(IssueExpireText(issueBe, expireBe)), type01);
             fake.OnData(Issuer, Tis("Test Issuer".PadRight(100)), type01);
             if (withPhoto)
             {

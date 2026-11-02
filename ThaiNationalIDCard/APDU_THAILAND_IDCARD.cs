@@ -53,12 +53,13 @@ namespace ThaiNationalIDCard
             set { }
         } 
 
-        // issue/expire
+        // issue/expire: Personal uses only the first 16 bytes (issue 8, expire 8). Public projects disagree whether
+        // 0177-0178 is card type, version or religion, so it must not be read when unused.
         public byte[] EF_CARD_ISSUE_EXPIRE
         {
             get
             {
-                return new byte[] { 0x80, 0xb0, 0x01, 0x67, 0x02, 0x00, 0x12 };
+                return new byte[] { 0x80, 0xb0, 0x01, 0x67, 0x02, 0x00, 0x10 };
             }
             set { }
         }

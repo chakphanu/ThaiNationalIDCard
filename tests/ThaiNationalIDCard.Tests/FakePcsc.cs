@@ -47,7 +47,7 @@ namespace ThaiNationalIDCard.Tests
     /// Transmit returns exact-length response buffers (the same shape PCSC's Transmit(ref) produces) and
     /// SCardError.InsufficientBuffer when the receive buffer passed in is smaller than the response.
     /// By default CardScripts.OnData models the "61 xx then GET RESPONSE" reader; with DirectAnswer set it models a
-    /// reader that answers data + 90 00 on the first transmit. That mode is inferred from issues #25 and #15, it has
+    /// reader that answers data + 90 00 on the first transmit. That mode is inferred from issue #25, it has
     /// not been observed on hardware by this test suite.
     /// </summary>
     internal sealed class FakeReader : ISCardReader

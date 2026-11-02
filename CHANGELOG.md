@@ -28,12 +28,13 @@ behavior compatible with 2.0.0.
   `Birthday` does (below 1 -> 1) and like `Expire` did (above 12 -> 12, above 31 -> 31). A day beyond the month
   length (for example 31 April) is clamped to the last day of the month. `Personal.Birthday` and
   `BirthdayYearString` are unchanged on purpose (year 0 still maps to the current year, see PR #22).
-- `SendCommand` on readers that answer with data and `90 xx` on the first transmit (issues #25, #15): the first
+- `SendCommand` on readers that answer with data and `90 xx` on the first transmit (inferred from issue #25; #15 shows
+  the same corruption, but from a reporter's own concatenation loop, so it is not evidence of such readers): the first
   receive buffer is now 258 bytes, so `readAllPhoto` no longer fails with "data buffer too small", and the trailing 2
   status bytes are removed, so they no longer end up in text fields or between photo chunks. Other status words and
   the `61 xx` + GET RESPONSE path are unchanged. Behavior notes: a first response of only `90 xx` now gives an empty
   result; a first response over 256 bytes with another status word is now returned instead of failing. This reader
-  behavior is inferred from the issue reports; it has not been checked on hardware.
+  behavior is inferred from issue #25; it has not been checked on hardware.
 - `Open` without a reader name (issue #14) tries the readers in order and moves on when `Connect` fails. If all fail,
   the error of the first reader is reported, so single-reader users see the same error as before. An explicit reader
   name never falls through. Only `Connect` failures move on: if the next reader connects but its card fails the
@@ -41,6 +42,10 @@ behavior compatible with 2.0.0.
 - `MonitorStart` cancels the previous monitor before creating a new one (it is not disposed, so its context stays open until exit). Behavior note: calling it twice
   on one `ThaiIDCard` used to leave both monitors running; only the last one runs now. Use one instance per reader.
 - Added a test for the raw lifetime expire value `99999999` (issue #3). `Expire` still returns 31 Dec 9456 for it.
+- `EF_CARD_ISSUE_EXPIRE` now asks for 16 bytes (Le `0x10`, was `0x12`), so card bytes 0177-0178 are no longer read.
+  `Personal` only uses issue (8 bytes) and expire (8 bytes), and public projects disagree whether those 2 bytes are
+  card type, version or religion. `Issue`, `Expire` and `ExpireString` are unchanged. Behavior note: the public
+  `EF_CARD_ISSUE_EXPIRE` property returns the new command. The new length has not been checked on hardware.
 
 ### Previously unreleased changes
 

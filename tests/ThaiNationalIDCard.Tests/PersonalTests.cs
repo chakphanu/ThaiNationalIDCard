@@ -216,6 +216,18 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
+        public void Issue_and_Expire_use_only_the_first_16_chars()
+        {
+            var exact = new Personal { Issue_Expire = "2560013125690130" };
+            var longer = new Personal { Issue_Expire = "2560013125690130" + "XY" };
+            Assert.Equal(new DateTime(2017, 1, 31), exact.Issue);
+            Assert.Equal(new DateTime(2026, 1, 30), exact.Expire);
+            Assert.Equal(exact.Issue, longer.Issue);
+            Assert.Equal(exact.Expire, longer.Expire);
+            Assert.Equal(exact.ExpireString, longer.ExpireString);
+        }
+
+        [Fact]
         public void Issue_with_year_0_still_throws()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => WithIssueExpire("00000131", "25690130").Issue);

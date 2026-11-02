@@ -174,7 +174,7 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal("80b0146802" + "00ff", cmds[19]);
         }
 
-        // ---- direct-answer reader: first transmit returns data + 90 00 (issues #25, #15) ----
+        // ---- direct-answer reader: first transmit returns data + 90 00 (inferred from issue #25) ----
 
         private static readonly byte[] ExpectedPhoto = Enumerable.Range(0, 20).SelectMany(CardScripts.PhotoChunk).ToArray();
 
@@ -312,6 +312,96 @@ namespace ThaiNationalIDCard.Tests
         }
 
         private static string Decode(byte[] bytes) => System.Text.Encoding.GetEncoding("TIS-620").GetString(bytes);
+
+        // ---- EF_CARD_ISSUE_EXPIRE reads issue + expire only, never card bytes 0177-0178 ----
+
+        private const string OldIssueExpire = "80b00167020012";
+
+        /// <summary>Also answers the old 18-byte command, so going back to it fails an assert, not as an unscripted command.</summary>
+        private static FakeReader AlsoAnswerOldIssueExpire(FakeReader reader, bool type01 = false)
+        {
+            return reader.OnData(OldIssueExpire, CardScripts.Tis(("25600131" + "25690130").PadRight(18)), type01);
+        }
+
+        /// <summary>First and last card offset of every READ BINARY sent (80 B0 P1 P2 02 00 Le).</summary>
+        private static List<int[]> CardReads(FakeReader reader)
+        {
+            return reader.Sent
+                .Where(c => c[0] == 0x80 && c[1] == 0xB0)
+                .Select(c => new[] { (c[2] << 8) | c[3], ((c[2] << 8) | c[3]) + c[6] - 1 })
+                .ToList();
+        }
+
+        [Fact]
+        public void Issue_expire_command_asks_for_16_bytes_in_both_command_sets()
+        {
+            byte[] expected = { 0x80, 0xB0, 0x01, 0x67, 0x02, 0x00, 0x10 };
+            Assert.Equal(expected, new APDU_THAILAND_IDCARD_TYPE_01().EF_CARD_ISSUE_EXPIRE);
+            Assert.Equal(expected, new APDU_THAILAND_IDCARD_TYPE_02().EF_CARD_ISSUE_EXPIRE);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public void Card_flow_sends_the_16_byte_issue_expire_command_once(bool type01, bool directAnswer)
+        {
+            var reader = AlsoAnswerOldIssueExpire(CardScripts.NewCard(type01, directAnswer: directAnswer), type01);
+
+            NewReader(reader).readAll();
+
+            Assert.Equal(1, reader.CountOf("80b00167020010"));
+            Assert.Equal(0, reader.CountOf(OldIssueExpire));
+            Assert.Equal(directAnswer ? 0 : 1, reader.CountOf(CardScripts.GetResponse(type01, 0x10)));
+            Assert.Equal(0, reader.CountOf(CardScripts.GetResponse(type01, 0x12)));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void No_read_in_a_full_card_flow_reaches_past_offset_0176(bool directAnswer)
+        {
+            var reader = AlsoAnswerOldIssueExpire(CardScripts.NewCard(withPhoto: true, directAnswer: directAnswer));
+
+            NewReader(reader).readAll(true);
+
+            List<int[]> reads = CardReads(reader);
+            Assert.Equal(5 + 20, reads.Count); // 5 files + 20 photo chunks
+            Assert.DoesNotContain(reads, r => r[0] <= 0x0178 && r[1] >= 0x0177);
+            Assert.Contains(reads, r => r[0] == 0x0167 && r[1] == 0x0176);
+        }
+
+        public static IEnumerable<object[]> IssueExpireFlowCases()
+        {
+            var inputs = new[]
+            {
+                new object[] { "25600131", "25690130", new DateTime(2017, 1, 31), new DateTime(2026, 1, 30), "20260130" }, // normal
+                new object[] { "25600000", "25690000", new DateTime(2017, 1, 1), new DateTime(2026, 1, 1), "20260101" },   // 00 month and day
+                new object[] { "25600015", "25690300", new DateTime(2017, 1, 15), new DateTime(2026, 3, 1), "20260301" },  // issue 00 month, expire 00 day
+                new object[] { "25600131", "99999999", new DateTime(2017, 1, 31), new DateTime(9456, 12, 31), "94561231" }, // lifetime card
+            };
+            var modes = new[]
+            {
+                new object[] { false, false }, // Type02, 61 xx + GET RESPONSE
+                new object[] { true, false },  // Type01, 61 xx + GET RESPONSE
+                new object[] { false, true },  // direct answer
+            };
+            return inputs.SelectMany(input => modes.Select(mode => input.Concat(mode).ToArray()));
+        }
+
+        [Theory]
+        [MemberData(nameof(IssueExpireFlowCases))]
+        public void Issue_expire_values_through_the_full_card_flow(string issueBe, string expireBe,
+            DateTime issue, DateTime expire, string expireString, bool type01, bool directAnswer)
+        {
+            var reader = CardScripts.NewCard(type01, directAnswer: directAnswer, issueBe: issueBe, expireBe: expireBe);
+
+            Personal p = NewReader(reader).readAll();
+
+            Assert.Equal(issue, p.Issue);
+            Assert.Equal(expire, p.Expire);
+            Assert.Equal(expireString, p.ExpireString);
+        }
 
         // ---- Open without a reader name tries the readers in order (issue #14) ----
 

@@ -219,7 +219,8 @@ namespace ThaiNationalIDCard
 
             if(responseApdu.SW1.Equals((byte)SW1Code.Normal))
             {
-                // Issue #15: drop the SW, or 90 xx ends up in text fields and between photo chunks.
+                // Drop the SW: direct-answer readers (inferred from #25) would otherwise put 90 xx into text fields
+                // and between photo chunks, the same corruption seen in #15 from a reporter's own loop.
                 return pbRecvBuffer.Take(pbRecvBuffer.Length - 2).ToArray();
             }
 
