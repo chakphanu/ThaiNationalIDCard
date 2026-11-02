@@ -1,6 +1,9 @@
-This repo is not maintained.
+สถานะโปรเจกต์
 ==================
-Please checkout new fork at: https://github.com/dotnetthailand/ThaiNationalIDCard
+- โค้ดบน `master` คือรุ่น 2.x เดิม และยังไม่มีการแก้ไขล่าสุด
+- [`release/2.x`](https://github.com/chakphanu/ThaiNationalIDCard/tree/release/2.x) คือสายรักษาความเข้ากันได้กับ .NET Framework มีการแก้บั๊กสำหรับรุ่น 2.0.1 ซึ่งยังไม่เผยแพร่บน NuGet
+- [`v3`](https://github.com/chakphanu/ThaiNationalIDCard/tree/v3) คือรุ่นที่เขียนใหม่ เป็น preview ยังไม่เผยแพร่ และยังไม่เคยทดสอบกับบัตรจริง
+- Fork ของชุมชน ขอบคุณชุมชน .NET Thailand: https://github.com/dotnetthailand/ThaiNationalIDCard
 
 
 ThaiNationalIDCard
