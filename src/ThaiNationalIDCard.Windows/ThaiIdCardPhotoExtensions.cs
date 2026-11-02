@@ -69,7 +69,8 @@ namespace ThaiNationalIDCard.Windows
         /// <summary>The decoders disagree on how to report bad data: GDI+ even says it is out of memory.</summary>
         private static bool IsDecodeFailure(Exception ex) =>
             ex is ArgumentException || ex is NotSupportedException || ex is IOException || ex is ExternalException ||
-            ex is InvalidOperationException || ex is OutOfMemoryException || ex is OverflowException;
+            ex is InvalidOperationException || ex is OutOfMemoryException || ex is OverflowException ||
+            ex is FormatException; // WPF raises System.IO.FileFormatException, which is not an IOException.
 
         private static ArgumentException NotDecodable(string parameter, Exception inner) =>
             new ArgumentException("The bytes could not be decoded as a JPEG.", parameter, inner);
