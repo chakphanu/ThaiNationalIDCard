@@ -1,25 +1,38 @@
-Project status
-==================
-- `release/2.x` is the compatibility line: bug fixes only, for .NET Framework. See `docs/maintenance.md` and `CHANGELOG.md`.
-- v3 is in development.
-- Community fork, with thanks to the .NET Thailand community: https://github.com/dotnetthailand/ThaiNationalIDCard
+# ThaiNationalIDCard
 
+ไลบรารีช่วยอ่านบัตรประจำตัวประชาชนไทย (Smartcard) สำหรับ .NET Framework
 
-ThaiNationalIDCard
-==================
+## สถานะโปรเจกต์
 
-Credit:  APDU Command from Mr.Manoi http://hosxp.net/index.php?option=com_smf&topic=22496
+- `release/2.x` เป็นสายสำหรับความเข้ากันได้: แก้บั๊กเท่านั้น สำหรับ .NET Framework ดู `docs/maintenance.md` และ `CHANGELOG.md`
+- รุ่น 2.0.1 ใน branch นี้ยังไม่เผยแพร่ รุ่นล่าสุดบน NuGet ยังเป็น 2.0.0 ซึ่งไม่มีการแก้ไขตาม `CHANGELOG.md`
+- v3 พัฒนาอยู่ใน branch `v3` เป็น preview ยังไม่เผยแพร่ และยังไม่เคยทดสอบกับบัตรจริง
+- Repository นี้เลิกสถานะ archive เมื่อวันที่ 2 พฤศจิกายน 2026
+- Fork ของชุมชน ขอบคุณชุมชน .NET Thailand: https://github.com/dotnetthailand/ThaiNationalIDCard
 
+## ขอบเขตของหลักฐาน
 
-ThaiNational IDCard(Smartcard) helper
+CI ของ `release/2.x` ผ่านบน Windows และ Ubuntu ที่คอมมิต `c488da3` งานบน Ubuntu ทำแค่ build ไลบรารี การทดสอบรันบน Windows การที่ CI ผ่านไม่ใช่หลักฐานด้านฮาร์ดแวร์:
 
-To install ThaiNationalIDCard, run the following command in the Package Manager Console
+- การทดสอบใช้เครื่องอ่าน PC/SC จำลองและข้อมูลสังเคราะห์ ไม่แตะฮาร์ดแวร์จริง
+- การทดสอบรัน build `net461` ของไลบรารีบน .NET runtime (`net8.0`) ไม่ใช่บน .NET Framework
+- ไม่มีการทดสอบที่เรียก `MonitorStart` จริง
 
+เอกสารนี้ไม่ได้อ้างว่าใช้ได้กับบัตรหรือเครื่องอ่านรุ่นใด
+
+## การติดตั้ง
+
+รันคำสั่งนี้ใน Package Manager Console:
+
+```
 PM> Install-Package ThaiNationalIDCard
+```
 
-Credit 3B 78 Type of thai smartcard See on wiki. https://github.com/kolry/ThaiNationalIDCard/wiki/_pages
+ตอนนี้คำสั่งนี้จะได้รุ่น 2.0.0
 
-``` CSharp
+## การใช้งาน
+
+```csharp
 using ThaiNationalIDCard;
 ...
 ...
@@ -57,3 +70,8 @@ public void readCard()
 }            
 
 ```
+
+## เครดิต
+
+- คำสั่ง APDU จาก Mr.Manoi: http://hosxp.net/index.php?option=com_smf&topic=22496
+- บัตรไทยประเภท 3B 78 ดูใน wiki: https://github.com/kolry/ThaiNationalIDCard/wiki/_pages

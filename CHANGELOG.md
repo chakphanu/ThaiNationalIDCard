@@ -1,75 +1,42 @@
-# Changelog
+# ประวัติการเปลี่ยนแปลง
 
-All notable changes of the 2.x maintenance line (`release/2.x`). The line is bug-fix only and stays source and
-behavior compatible with 2.0.0.
+การเปลี่ยนแปลงที่สำคัญทั้งหมดของสายบำรุงรักษา 2.x (`release/2.x`) สายนี้แก้บั๊กเท่านั้น และยังเข้ากันได้กับ 2.0.0 ทั้งในระดับ source และพฤติกรรม
 
-## 2.0.1
+## 2.0.1 (ยังไม่เผยแพร่)
 
-### Fixed
+รุ่นนี้ยังไม่อยู่บน NuGet การทดสอบของรุ่นนี้ใช้เครื่องอ่าน PC/SC จำลองเท่านั้น ไม่ได้ทดสอบกับบัตรหรือเครื่องอ่านจริง และรัน build `net461` บน .NET runtime ไม่ใช่บน .NET Framework ดู `docs/maintenance.md`
 
-- `ThaiIDCard` photo read: each photo chunk was transmitted to the card twice (`SendCommand` was called twice per
-  chunk). It is now called once, which halves the APDU traffic of `readAll(true)` / `readAllPhoto`.
-- `ThaiIDCard` GET RESPONSE: the result of the second `Transmit` was never checked. A failed GET RESPONSE
-  now throws `PCSCException` (as a failed first `Transmit` already did) instead of silently returning a zero-filled
-  buffer that was decoded as card data. Behavior note: callers of `readAll`/`readCitizenid` can now get a
-  `PCSCException` where they used to get corrupt data; on the monitor path (`eventCardInserted*`) the exception is
-  caught and reported through `ErrorCode()`/`Error()`.
-- `GetReaders`: rethrows with `throw;` (keeps the original stack trace) and always releases its PC/SC context.
-  It no longer leaves a released context in the internal context field.
-- `Open`: when anything fails after connecting (no ATR, applet select fails or throws, unsupported protocol) the
-  reader is disconnected and the context released before returning `false`. Return values and error codes are
-  unchanged. `readAll`/`readCitizenid` likewise disconnect when a read throws (the exception still propagates).
-- Card inserted monitor callback: with both `eventCardInserted` and `eventCardInsertedWithPhoto` subscribed the card is
-  now read once (with photo) and the same `Personal` is passed to both handlers (it was read twice). Handlers still
-  receive `null` when `Open` failed, exactly as before (the reason is also available in `ErrorCode()`/`Error()`), and
-  exceptions can no longer escape on the PC/SC monitor thread: they are caught and stored in the error state
-  (error code 256 for `PCSCException`, 512 for any other exception).
-- `Personal.Issue` and `Personal.Expire` no longer throw for month or day `00`; month/day are clamped like
-  `Birthday` does (below 1 -> 1) and like `Expire` did (above 12 -> 12, above 31 -> 31). A day beyond the month
-  length (for example 31 April) is clamped to the last day of the month. `Personal.Birthday` and
-  `BirthdayYearString` are unchanged on purpose (year 0 still maps to the current year, see PR #22).
-- `SendCommand` on readers that answer with data and `90 xx` on the first transmit (inferred from issue #25; #15 shows
-  the same corruption, but from a reporter's own concatenation loop, so it is not evidence of such readers): the first
-  receive buffer is now 258 bytes, so `readAllPhoto` no longer fails with "data buffer too small", and the trailing 2
-  status bytes are removed, so they no longer end up in text fields or between photo chunks. Other status words and
-  the `61 xx` + GET RESPONSE path are unchanged. Behavior notes: a first response of only `90 xx` now gives an empty
-  result; a first response over 256 bytes with another status word is now returned instead of failing. This reader
-  behavior is inferred from issue #25; it has not been checked on hardware.
-- `Open` without a reader name (issue #14) tries the readers in order and moves on when `Connect` fails. If all fail,
-  the error of the first reader is reported, so single-reader users see the same error as before. An explicit reader
-  name never falls through. Only `Connect` failures move on: if the next reader connects but its card fails the
-  applet select, `Open` reports that failure (error code 1) instead of the first reader's error.
-- `MonitorStart` cancels the previous monitor before creating a new one (it is not disposed, so its context stays open until exit). Behavior note: calling it twice
-  on one `ThaiIDCard` used to leave both monitors running; only the last one runs now. Use one instance per reader.
-- Added a test for the raw lifetime expire value `99999999` (issue #3). `Expire` still returns 31 Dec 9456 for it.
-- `EF_CARD_ISSUE_EXPIRE` now asks for 16 bytes (Le `0x10`, was `0x12`), so card bytes 0177-0178 are no longer read.
-  `Personal` only uses issue (8 bytes) and expire (8 bytes), and public projects disagree whether those 2 bytes are
-  card type, version or religion. `Issue`, `Expire` and `ExpireString` are unchanged. Behavior note: the public
-  `EF_CARD_ISSUE_EXPIRE` property returns the new command. The new length has not been checked on hardware.
+### ที่แก้ไข
 
-### Previously unreleased changes
+- การอ่านรูปถ่ายของ `ThaiIDCard`: เดิมส่ง chunk รูปถ่ายแต่ละชิ้นไปที่บัตรสองครั้ง (เรียก `SendCommand` สองครั้งต่อ chunk) ตอนนี้เรียกครั้งเดียว ทำให้ปริมาณ APDU ของ `readAll(true)` / `readAllPhoto` ลดลงครึ่งหนึ่ง
+- GET RESPONSE ของ `ThaiIDCard`: เดิมไม่เคยตรวจผลของ `Transmit` ครั้งที่สอง ตอนนี้ GET RESPONSE ที่ล้มเหลวจะโยน `PCSCException` (เหมือนที่ `Transmit` ครั้งแรกทำอยู่แล้ว) แทนที่จะคืน buffer ที่เต็มไปด้วยศูนย์ซึ่งถูกถอดรหัสเป็นข้อมูลบัตร หมายเหตุพฤติกรรม: ผู้เรียก `readAll`/`readCitizenid` อาจได้ `PCSCException` ในกรณีที่เดิมได้ข้อมูลเสีย บนเส้นทาง monitor (`eventCardInserted*`) exception จะถูกดักจับและรายงานผ่าน `ErrorCode()`/`Error()`
+- `GetReaders`: rethrow ด้วย `throw;` (คง stack trace เดิม) และปล่อย PC/SC context เสมอ ไม่ทิ้ง context ที่ปล่อยแล้วไว้ใน context field ภายในอีกต่อไป
+- `Open`: เมื่อมีอะไรล้มเหลวหลังเชื่อมต่อ (ไม่มี ATR, select applet ล้มเหลวหรือโยน exception, protocol ที่ไม่รองรับ) จะตัดการเชื่อมต่อเครื่องอ่านและปล่อย context ก่อนคืน `false` ค่าที่คืนและรหัสข้อผิดพลาดไม่เปลี่ยน `readAll`/`readCitizenid` ก็ตัดการเชื่อมต่อเช่นกันเมื่อการอ่านโยน exception (exception ยังส่งต่อออกไป)
+- Callback ของ monitor เมื่อเสียบบัตร: เมื่อ subscribe ทั้ง `eventCardInserted` และ `eventCardInsertedWithPhoto` บัตรจะถูกอ่านครั้งเดียว (พร้อมรูปถ่าย) และส่ง `Personal` ตัวเดียวกันให้ทั้งสอง handler (เดิมอ่านสองครั้ง) Handler ยังได้รับ `null` เมื่อ `Open` ล้มเหลว เหมือนเดิมทุกประการ (เหตุผลดูได้จาก `ErrorCode()`/`Error()`) และ exception จะไม่หลุดบน monitor thread ของ PC/SC อีก: จะถูกดักจับและเก็บไว้ในสถานะข้อผิดพลาด (รหัส 256 สำหรับ `PCSCException` และ 512 สำหรับ exception อื่น)
+- `Personal.Issue` และ `Personal.Expire` ไม่โยน exception เมื่อเดือนหรือวันเป็น `00` เดือนและวันถูก clamp เหมือนที่ `Birthday` ทำ (ต่ำกว่า 1 เป็น 1) และเหมือนที่ `Expire` เคยทำ (เกิน 12 เป็น 12, เกิน 31 เป็น 31) วันที่เกินความยาวของเดือน (เช่น 31 เมษายน) ถูก clamp เป็นวันสุดท้ายของเดือน `Personal.Birthday` และ `BirthdayYearString` ตั้งใจไม่เปลี่ยน (ปี 0 ยังเป็นปีปัจจุบัน ดู PR #22)
+- `SendCommand` บนเครื่องอ่านที่ตอบข้อมูลและ `90 xx` ใน transmit แรก (อนุมานจาก issue #25; #15 แสดงความเสียหายแบบเดียวกัน แต่มาจาก loop ต่อข้อมูลของผู้รายงานเอง จึงไม่ใช่หลักฐานว่ามีเครื่องอ่านแบบนี้): receive buffer แรกตอนนี้มีขนาด 258 ไบต์ `readAllPhoto` จึงไม่ล้มเหลวด้วย "data buffer too small" และตัดไบต์สถานะ 2 ไบต์ท้ายออก จึงไม่ไปอยู่ใน field ข้อความหรือระหว่าง chunk รูปถ่าย Status word อื่นและเส้นทาง `61 xx` + GET RESPONSE ไม่เปลี่ยน หมายเหตุพฤติกรรม: คำตอบแรกที่มีแค่ `90 xx` ตอนนี้ให้ผลลัพธ์ว่าง และคำตอบแรกที่ยาวเกิน 256 ไบต์พร้อม status word อื่นตอนนี้ถูกคืนค่าแทนการล้มเหลว พฤติกรรมของเครื่องอ่านนี้อนุมานจาก issue #25 และยังไม่ได้ตรวจกับฮาร์ดแวร์
+- `Open` ที่ไม่ระบุชื่อเครื่องอ่าน (issue #14) ลองเครื่องอ่านตามลำดับ และไปเครื่องถัดไปเมื่อ `Connect` ล้มเหลว ถ้าล้มเหลวทั้งหมดจะรายงานข้อผิดพลาดของเครื่องแรก ผู้ใช้เครื่องอ่านเครื่องเดียวจึงเห็นข้อผิดพลาดเหมือนเดิม ชื่อเครื่องอ่านที่ระบุเองจะไม่เปลี่ยนไปเครื่องอื่น เฉพาะความล้มเหลวของ `Connect` เท่านั้นที่ไปเครื่องถัดไป: ถ้าเครื่องถัดไปเชื่อมต่อได้แต่บัตรของเครื่องนั้น select applet ไม่สำเร็จ `Open` จะรายงานความล้มเหลวนั้น (รหัสข้อผิดพลาด 1) แทนข้อผิดพลาดของเครื่องแรก
+- `MonitorStart` ยกเลิก monitor ตัวเดิมก่อนสร้างตัวใหม่ (ไม่ได้ dispose context ของตัวเดิมจึงเปิดค้างจนกว่าโปรแกรมจะจบ) หมายเหตุพฤติกรรม: การเรียกสองครั้งบน `ThaiIDCard` ตัวเดียวเคยทำให้ monitor ทั้งสองตัวทำงาน ตอนนี้ทำงานเฉพาะตัวสุดท้าย ให้ใช้หนึ่ง instance ต่อเครื่องอ่าน ไม่มีการทดสอบที่เรียก `MonitorStart` จริง
+- เพิ่มการทดสอบสำหรับค่าวันหมดอายุดิบแบบตลอดชีพ `99999999` (issue #3) `Expire` ยังคืน 31 ธ.ค. 9456 สำหรับค่านี้
+- `EF_CARD_ISSUE_EXPIRE` ตอนนี้ขอ 16 ไบต์ (Le `0x10` เดิม `0x12`) จึงไม่อ่านไบต์ 0177-0178 ของบัตรอีกต่อไป `Personal` ใช้แค่วันออกบัตร (8 ไบต์) และวันหมดอายุ (8 ไบต์) และโปรเจกต์สาธารณะตีความ 2 ไบต์นั้นไม่ตรงกันว่าเป็นประเภทบัตร เวอร์ชัน หรือศาสนา `Issue`, `Expire` และ `ExpireString` ไม่เปลี่ยน หมายเหตุพฤติกรรม: property สาธารณะ `EF_CARD_ISSUE_EXPIRE` คืนคำสั่งใหม่ ความยาวใหม่ยังไม่ได้ตรวจกับฮาร์ดแวร์
 
-The published 2.0.0 package depended on PCSC 3.7.0 (and also bundled `pcsc-sharp.dll`); it was built on 2017-07-13.
-2.0.1 depends on PCSC 5.0.0 and PCSC.Iso7816 5.0.0, and it is the first package to include these changes from the
-repository history:
+### การเปลี่ยนแปลงก่อนหน้าที่ยังไม่เคยออกรุ่น
 
-- 2017-12: new `Personal` getters `Th_Middlename`, `En_Middlename`, `BirthdayYearString` and `ExpireString`.
-- 2018-05: RAW protocol support for legacy readers (`1da1edf`), upgrade to PCSC 4.0.0 and PCSC.Iso7816 4.0.0.
-- 2020-02: `Birthday` no longer throws for year, month or day `00` (`df52b19`, PR #22); upgrade to PCSC 5.0.0 and
-  PCSC.Iso7816 5.0.0 (`caba0d1`).
+แพ็กเกจ 2.0.0 ที่เผยแพร่แล้วขึ้นกับ PCSC 3.7.0 (และรวม `pcsc-sharp.dll` มาด้วย) build เมื่อ 2017-07-13 รุ่น 2.0.1 ขึ้นกับ PCSC 5.0.0 และ PCSC.Iso7816 5.0.0 และเป็นแพ็กเกจแรกที่จะรวมการเปลี่ยนแปลงต่อไปนี้จากประวัติ repository:
 
-### Performance
+- 2017-12: getter ใหม่ของ `Personal` ได้แก่ `Th_Middlename`, `En_Middlename`, `BirthdayYearString` และ `ExpireString`
+- 2018-05: รองรับ RAW protocol สำหรับเครื่องอ่านรุ่นเก่า (`1da1edf`) อัปเกรดเป็น PCSC 4.0.0 และ PCSC.Iso7816 4.0.0
+- 2020-02: `Birthday` ไม่โยน exception เมื่อปี เดือน หรือวันเป็น `00` (`df52b19`, PR #22) อัปเกรดเป็น PCSC 5.0.0 และ PCSC.Iso7816 5.0.0 (`caba0d1`)
 
-- `Personal` splits the address string once and caches the trimmed parts instead of calling `Split` in every
-  `addr*` getter. The cache is reset when `Address` is set.
-- The photo `MemoryStream` is pre-sized.
+### ประสิทธิภาพ
 
-### Build and packaging
+- `Personal` แยกสตริงที่อยู่ครั้งเดียวและ cache ส่วนที่ trim แล้ว แทนการเรียก `Split` ใน getter `addr*` ทุกตัว cache จะถูกล้างเมื่อกำหนด `Address`
+- กำหนดขนาด `MemoryStream` ของรูปถ่ายไว้ล่วงหน้า
 
-- SDK-style project multi-targeting net40, net45, net452, net46 and net461. The NuGet package contains all five
-  `lib/` folders (2.0.0 only had `lib/net40`) and depends on PCSC 5.0.0 and PCSC.Iso7816 5.0.0 (2.0.0 depended on PCSC 3.7.0 and
-  bundled an old `pcsc-sharp.dll`). The hint paths that pointed outside the repository are gone.
-- The example WinForms project is SDK-style, targets net461 and uses PCSC 5.0.0 through the library project.
-- `AssemblyVersion` stays 2.0.0.0; package and file version are 2.0.1.
-- Removed the committed `.vs` folder and `.nupkg` files; `.gitignore` updated.
-- Added xUnit tests (synthetic data, fake PC/SC reader) and a GitHub Actions workflow (build, test, pack; no publish).
+### การ build และแพ็กเกจ
+
+- โปรเจกต์แบบ SDK-style ที่ multi-target net40, net45, net452, net46 และ net461 แพ็กเกจ NuGet มีโฟลเดอร์ `lib/` ครบทั้งห้า (2.0.0 มีแค่ `lib/net40`) และขึ้นกับ PCSC 5.0.0 และ PCSC.Iso7816 5.0.0 (2.0.0 ขึ้นกับ PCSC 3.7.0 และรวม `pcsc-sharp.dll` รุ่นเก่า) hint path ที่ชี้ออกนอก repository ถูกเอาออก
+- โปรเจกต์ตัวอย่าง WinForms เป็นแบบ SDK-style, target net461 และใช้ PCSC 5.0.0 ผ่านโปรเจกต์ไลบรารี
+- `AssemblyVersion` ยังเป็น 2.0.0.0 ส่วนเวอร์ชันของแพ็กเกจและไฟล์คือ 2.0.1
+- เอาโฟลเดอร์ `.vs` และไฟล์ `.nupkg` ที่ commit ไว้ออก และปรับ `.gitignore`
+- เพิ่มการทดสอบ xUnit (ข้อมูลสังเคราะห์, เครื่องอ่าน PC/SC จำลอง) และ workflow ของ GitHub Actions (build, test, pack; ไม่มี publish)

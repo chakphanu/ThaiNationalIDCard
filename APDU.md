@@ -1,20 +1,25 @@
-Get response 0x00, 0xC0, 0x00, 0x00 + Len in hex
+# คำสั่ง APDU
 
-INS 0xB0 | Read Bin
-INS 0xC0 | Get response
+เอกสารนี้แสดงชุดคำสั่งของสาย 2.x ไม่ใช่ข้อกำหนดจากหน่วยงานรัฐ และไม่ได้อ้างว่าใช้ได้กับบัตรหรือเครื่องอ่านรุ่นใด
 
+GET RESPONSE: `0x00, 0xC0, 0x00, 0x00` ตามด้วยความยาว (Len) เป็นเลขฐานสิบหก
 
-SELECT FILE
-CLA = 0X00
-INS = 0XA4
-P1 = 0x04 | Direct selection by DF name (data field=DF name)
-P2 = 0x00
-Lc = 0x08 ( len of DF Name )
+- INS `0xB0`: อ่านข้อมูล (Read Bin)
+- INS `0xC0`: GET RESPONSE
 
-Thailand Personal DF Name
-0xA0, 0X00, 0x00, 0x00, 0x54, 0x48, 0x00, 0x01
-  
- 
+## คำสั่ง SELECT FILE
+
+- CLA = `0X00`
+- INS = `0XA4`
+- P1 = `0x04`: เลือกโดยตรงด้วยชื่อ DF (data field คือชื่อ DF)
+- P2 = `0x00`
+- Lc = `0x08` (ความยาวของชื่อ DF)
+
+ชื่อ DF ของข้อมูลบุคคล (Thailand Personal DF Name):
+
+`0xA0, 0X00, 0x00, 0x00, 0x54, 0x48, 0x00, 0x01`
+
+## ตารางคำสั่ง
 
 |  Description  	| CLA  	| INS  	| P1   	| P2   	| Lc   	| Data 	| Le   	|
 |---------------	|------	|------	|------	|------	|------	|------	|------	|
@@ -49,3 +54,13 @@ Thailand Personal DF Name
 | Photo_Part18/20 | 0x80 	| 0xB0 	| 0x12 	| 0x6A 	| 0x02 	| 0x00 	| 0xFF 	|
 | Photo_Part19/20 | 0x80 	| 0xB0 	| 0x13 	| 0x69 	| 0x02 	| 0x00 	| 0xFF 	|
 | Photo_Part20/20 | 0x80 	| 0xB0 	| 0x14 	| 0x68 	| 0x02 	| 0x00 	| 0xFF 	|
+
+## การใช้งานในโค้ด 2.x
+
+ตารางแยกรายการตามข้อมูล แต่โค้ดไม่ได้ส่งทุกแถวตามนี้ (`ThaiNationalIDCard/APDU_THAILAND_IDCARD.cs`):
+
+- GET RESPONSE: P2 เป็น `0x01` เมื่อ ATR ขึ้นต้นด้วย `3B 67` และเป็น `0x00` ในกรณีอื่น
+- `EF_PERSON_INFO` อ่านชื่อ วันเกิด และเพศรวมกันที่ `80 B0 00 11 02 00 D1`
+- `EF_CARD_ISSUE_EXPIRE` อ่านวันออกบัตรและวันหมดอายุรวมกันที่ `80 B0 01 67 02 00 10`
+
+ความยาวใหม่ของ `EF_CARD_ISSUE_EXPIRE` ยังไม่ได้ตรวจกับฮาร์ดแวร์
