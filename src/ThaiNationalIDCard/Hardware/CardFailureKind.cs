@@ -17,6 +17,12 @@ namespace ThaiNationalIDCard.Hardware
         UnsupportedCard,
         MalformedResponse,
         Communication,
+
+        /// <summary>SELECT of the MOI applet was refused.</summary>
+        NoApplet,
+
+        /// <summary>The CID gate did not get a citizen ID with any allowed attempt.</summary>
+        UnknownReadBehaviour,
     }
 
     /// <summary>Single place that turns a failure category into the library exception for it.</summary>

@@ -35,6 +35,13 @@ namespace ThaiNationalIDCard.Hardware
             return _channel.ListReaders();
         }
 
+        /// <summary>Current state of every known reader.</summary>
+        public IReadOnlyList<ReaderStatus> GetReaderStatuses()
+        {
+            ThrowIfDisposed();
+            return _channel.GetReaderStatuses();
+        }
+
         /// <summary>Chooses a reader from a status snapshot. See <see cref="ReaderSelector"/> for the rules.</summary>
         public string SelectReader(string? preferredReader)
         {

@@ -92,7 +92,7 @@ namespace ThaiNationalIDCard.Tests
             return expected;
         }
 
-        /// <summary>READ offset and Le pairs of a full v3 read in the 2.x order, until step 5 provides the workflow.</summary>
+        /// <summary>READ offset and Le pairs of a full v3 read in the 2.x order. The photo tests use them as a chunk list.</summary>
         public static IEnumerable<(int Offset, int Le)> V3Reads()
         {
             yield return (0x0004, 0x0D);

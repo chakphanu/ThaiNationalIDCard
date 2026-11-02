@@ -1,32 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ThaiNationalIDCard.Hardware;
-using ThaiNationalIDCard.Protocol;
+using ThaiNationalIDCard.Workflow;
 using Xunit;
 
 namespace ThaiNationalIDCard.Tests
 {
     /// <summary>
     /// The golden files state what the old code sends, not what a card requires. These tests pin the v3 wire
-    /// sequence against them, with only the differences the plan lists. Step 5 replaces the test driver with the
-    /// workflow; the expected sequence stays.
+    /// sequence against them, with only the differences the plan lists. The driver is the real workflow.
     /// </summary>
     public class GoldenSequenceTests
     {
-        private static List<string> Drive(SimulatedCard card, byte p2)
+        private static List<string> Drive(SimulatedCard card)
         {
-            using var connection = new GuardedCardConnection(card, CommandPolicy.Public);
-            var exchange = new ApduExchange(connection);
-            connection.Connect(card.ReaderName);
-            exchange.Exchange(ApduText.Select(SimulatedCard.MoiAidHex), p2);
-            foreach ((int offset, int le) in GoldenSequence.V3Reads())
-            {
-                ApduResponse response = exchange.Exchange(ApduText.Read(offset, le), p2);
-                Assert.True(response.IsSuccess, response.ToString());
-                Assert.Equal(le, response.Data.Length);
-            }
+            CardReadResult result = new CardReadWorkflow(card).Read(new CardReadRequest(), TestContext.Current.CancellationToken);
 
+            Assert.All(result.Fields, f => Assert.Equal(FieldQuality.Ok, f.Info.Quality));
             return card.ReceivedHex.ToList();
         }
 
@@ -96,35 +86,35 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
-        public void Exchange_with_select_9000_matches_golden_plus_allowed_differences()
+        public void Workflow_with_select_9000_matches_golden_plus_allowed_differences()
         {
             List<string> expected = GoldenSequence.ExpectedV3(GoldenSequence.Load(GoldenSequence.P2Zero));
 
-            Assert.Equal(expected, Drive(new SimulatedCard(), 0x00));
+            Assert.Equal(expected, Drive(new SimulatedCard()));
         }
 
         [Fact]
-        public void Exchange_with_select_610a_adds_only_the_get_response_after_select()
+        public void Workflow_with_select_610a_adds_only_the_get_response_after_select()
         {
             List<string> expected = GoldenSequence.ExpectedV3(GoldenSequence.Load(GoldenSequence.P2Zero), selectAnnounces: 0x0A);
 
-            Assert.Equal(expected, Drive(new SimulatedCard { SelectAnswer = SimSelectAnswer.Pending610A }, 0x00));
+            Assert.Equal(expected, Drive(new SimulatedCard { SelectAnswer = SimSelectAnswer.Pending610A }));
         }
 
         [Fact]
-        public void Exchange_with_p2_one_matches_the_3b67_golden()
+        public void Workflow_with_a_3b67_atr_matches_the_p2_one_golden()
         {
             List<string> expected = GoldenSequence.ExpectedV3(GoldenSequence.Load(GoldenSequence.P2One));
 
-            Assert.Equal(expected, Drive(new SimulatedCard { GetResponseP2 = 0x01 }, 0x01));
+            Assert.Equal(expected, Drive(new SimulatedCard { GetResponseP2 = 0x01, Atr = new byte[] { 0x3B, 0x67, 0x00, 0x00 } }));
         }
 
         [Fact]
-        public void Exchange_on_a_direct_answer_reader_matches_the_direct_golden()
+        public void Workflow_on_a_direct_answer_reader_matches_the_direct_golden()
         {
             List<string> expected = GoldenSequence.ExpectedV3(GoldenSequence.Load(GoldenSequence.Direct));
 
-            Assert.Equal(expected, Drive(new SimulatedCard { Mode = SimReaderMode.DirectAnswer }, 0x00));
+            Assert.Equal(expected, Drive(new SimulatedCard { Mode = SimReaderMode.DirectAnswer }));
         }
 
         [Theory]

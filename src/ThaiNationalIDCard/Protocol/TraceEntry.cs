@@ -11,6 +11,39 @@ namespace ThaiNationalIDCard.Protocol
         Read,
         GetResponse,
         AppletData,
+
+        /// <summary>Not a command: a workflow decision, see <see cref="TraceEvent"/>.</summary>
+        Event,
+    }
+
+    /// <summary>A workflow decision worth seeing next to the commands. Holds no card data.</summary>
+    internal enum TraceEvent
+    {
+        None = 0,
+        Connected,
+        TransactionOpened,
+        TransactionClosed,
+
+        /// <summary>Closing failed. It hides nothing: the read result or the original error still stands.</summary>
+        TransactionCloseFailed,
+
+        /// <summary>The attempt ended in a retryable failure. Everything read so far was dropped.</summary>
+        Retry,
+
+        /// <summary>The ATR started with 3B 67, so the P2 order was reversed. It says nothing else about the card.</summary>
+        AtrP2RuleUsed,
+        P2Locked,
+
+        /// <summary>The single P2 fallback of this read was spent. GetResponseP2 holds the new value.</summary>
+        P2Fallback,
+        ChecksumRetry,
+
+        /// <summary>A CID retry that spent no P2 budget, because no GET RESPONSE was sent so far.</summary>
+        NoGetResponseRetry,
+        EnteringMoi,
+        EnteringNhso,
+        EnteringAdm,
+        PrivateStageStopped,
     }
 
     /// <summary>
@@ -24,7 +57,8 @@ namespace ThaiNationalIDCard.Protocol
         public const int NoValue = -1;
 
         public TraceEntry(TraceCommandKind kind, int offset, int requestedLength, int receivedLength, int statusWord,
-            int round, int getResponseP2, ExchangeFlags flags, CommandVerdict verdict, CardFailureKind failure)
+            int round, int getResponseP2, ExchangeFlags flags, CommandVerdict verdict, CardFailureKind failure,
+            TraceEvent traceEvent = TraceEvent.None)
         {
             Kind = kind;
             Offset = offset;
@@ -36,7 +70,13 @@ namespace ThaiNationalIDCard.Protocol
             Flags = flags;
             Verdict = verdict;
             Failure = failure;
+            Event = traceEvent;
         }
+
+        /// <summary>An entry for a workflow decision instead of a transmit.</summary>
+        public static TraceEntry ForEvent(TraceEvent traceEvent, int getResponseP2 = NoValue, CardFailureKind failure = CardFailureKind.None) =>
+            new TraceEntry(TraceCommandKind.Event, NoValue, NoValue, NoValue, NoValue, NoValue, getResponseP2,
+                ExchangeFlags.None, CommandVerdict.Allowed, failure, traceEvent);
 
         public TraceCommandKind Kind { get; }
 
@@ -65,9 +105,12 @@ namespace ThaiNationalIDCard.Protocol
 
         public CardFailureKind Failure { get; }
 
+        /// <summary>What the workflow decided, when <see cref="Kind"/> is <see cref="TraceCommandKind.Event"/>.</summary>
+        public TraceEvent Event { get; }
+
         public override string ToString() => string.Format(
             CultureInfo.InvariantCulture,
-            "{0} offset={1} requested={2} received={3} sw={4} round={5} p2={6} flags={7} verdict={8} failure={9}",
-            Kind, Offset, RequestedLength, ReceivedLength, StatusWord, Round, GetResponseP2, Flags, Verdict, Failure);
+            "{0} offset={1} requested={2} received={3} sw={4} round={5} p2={6} flags={7} verdict={8} failure={9} event={10}",
+            Kind, Offset, RequestedLength, ReceivedLength, StatusWord, Round, GetResponseP2, Flags, Verdict, Failure, Event);
     }
 }

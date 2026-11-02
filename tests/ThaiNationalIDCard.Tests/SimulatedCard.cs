@@ -81,7 +81,6 @@ namespace ThaiNationalIDCard.Tests
 
         private readonly Dictionary<string, byte[]> _applets = new Dictionary<string, byte[]>();
         private readonly Dictionary<int, CardFailureKind> _transmitFailures = new Dictionary<int, CardFailureKind>();
-        private readonly byte[] _selectBlob = Enumerable.Repeat((byte)0x5A, 10).ToArray();
 
         private byte[]? _pendingSource;
         private string? _pendingApplet;
@@ -131,6 +130,20 @@ namespace ThaiNationalIDCard.Tests
         public CardFailureKind? ConnectFailure { get; set; }
 
         public CardFailureKind? BeginTransactionFailure { get; set; }
+
+        /// <summary>Failures for the next calls to Connect, one each, in order. Then Connect works again.</summary>
+        public Queue<CardFailureKind> ConnectFailures { get; } = new Queue<CardFailureKind>();
+
+        /// <summary>Failures for the next calls to BeginTransaction, one each, in order.</summary>
+        public Queue<CardFailureKind> BeginTransactionFailures { get; } = new Queue<CardFailureKind>();
+
+        public CardFailureKind? EndTransactionFailure { get; set; }
+
+        /// <summary>The 10 bytes behind SELECT 61 0A. They are outside the memory image.</summary>
+        public byte[] SelectBlob { get; set; } = Enumerable.Repeat((byte)0x5A, 10).ToArray();
+
+        /// <summary>Order of connection level calls, for tests about what happens where.</summary>
+        public List<string> CallLog { get; } = new List<string>();
 
         public List<SimExchange> Log { get; } = new List<SimExchange>();
 
@@ -185,6 +198,12 @@ namespace ThaiNationalIDCard.Tests
         public CardConnectionInfo Connect(string readerName)
         {
             ConnectCalls++;
+            CallLog.Add("connect");
+            if (ConnectFailures.Count > 0)
+            {
+                throw CardFailures.ToException(ConnectFailures.Dequeue());
+            }
+
             if (ConnectFailure.HasValue)
             {
                 throw CardFailures.ToException(ConnectFailure.Value);
@@ -198,6 +217,7 @@ namespace ThaiNationalIDCard.Tests
         public void Disconnect()
         {
             DisconnectCalls++;
+            CallLog.Add("disconnect");
             _connected = false;
             _inTransaction = false;
             ClearCardState();
@@ -206,29 +226,44 @@ namespace ThaiNationalIDCard.Tests
         public void BeginTransaction()
         {
             BeginTransactionCalls++;
+            if (BeginTransactionFailures.Count > 0)
+            {
+                CallLog.Add("begin-failed");
+                throw CardFailures.ToException(BeginTransactionFailures.Dequeue());
+            }
+
             if (BeginTransactionFailure.HasValue)
             {
+                CallLog.Add("begin-failed");
                 throw CardFailures.ToException(BeginTransactionFailure.Value);
             }
 
             if (!_connected)
             {
+                CallLog.Add("begin-failed");
                 throw CardFailures.ToException(CardFailureKind.NotConnected);
             }
 
+            CallLog.Add("begin");
             _inTransaction = true;
         }
 
         public void EndTransaction()
         {
             EndTransactionCalls++;
+            CallLog.Add("end");
             _inTransaction = false;
+            if (EndTransactionFailure.HasValue)
+            {
+                throw CardFailures.ToException(EndTransactionFailure.Value);
+            }
         }
 
         public byte[] Transmit(byte[] command)
         {
             byte[] copy = (byte[])command.Clone();
             int position = Log.Count + 1;
+            CallLog.Add("transmit");
 
             if (_transmitFailures.TryGetValue(position, out CardFailureKind failure))
             {
@@ -304,7 +339,35 @@ namespace ThaiNationalIDCard.Tests
                 return AnswerRead(c);
             }
 
+            if (c.Length == 5 && c[0] == 0x80 && c[1] == 0x00)
+            {
+                return AnswerAppletData();
+            }
+
             return new byte[] { 0x6D, 0x00 };
+        }
+
+        /// <summary>The shape assumed here, 61 10 then 16 bytes, follows the plan and was not seen on a card.</summary>
+        private byte[] AnswerAppletData()
+        {
+            if (_selected != AdmAidHex)
+            {
+                return new byte[] { 0x6D, 0x00 };
+            }
+
+            byte[] image = _applets[_selected];
+            const int Length = 0x10;
+            if (Mode == SimReaderMode.DirectAnswer)
+            {
+                Answered.Add(new AnsweredRange(_selected, 0, Length));
+                return image.Take(Length).Concat(new byte[] { 0x90, 0x00 }).ToArray();
+            }
+
+            _pendingSource = image;
+            _pendingApplet = _selected;
+            _pendingOffset = 0;
+            _pendingRemaining = Length;
+            return new byte[] { 0x61, Length };
         }
 
         private byte[] AnswerSelect(byte[] c)
@@ -320,10 +383,10 @@ namespace ThaiNationalIDCard.Tests
             if (SelectAnswer == SimSelectAnswer.Pending610A)
             {
                 // The 10 bytes are outside the memory image, so they never appear in Answered.
-                _pendingSource = _selectBlob;
+                _pendingSource = SelectBlob;
                 _pendingApplet = null;
                 _pendingOffset = 0;
-                _pendingRemaining = _selectBlob.Length;
+                _pendingRemaining = SelectBlob.Length;
                 return new byte[] { 0x61, 0x0A };
             }
 

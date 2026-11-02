@@ -42,9 +42,10 @@ namespace ThaiNationalIDCard.Protocol
         /// 61 xx are drained and discarded unread and the drain result decides nothing.
         /// Throws <see cref="CommandRejectedException"/> when the guard refuses the command itself. A refused
         /// follow-up comes back as a status with <see cref="ExchangeFlags.FollowUpRejected"/>, because the card
-        /// asked for it, not the caller.
+        /// asked for it, not the caller. With <paramref name="drainSelectResponse"/> false, a SELECT answering
+        /// 61 xx stops there and sends no GET RESPONSE.
         /// </summary>
-        public ApduResponse Exchange(byte[] command, byte getResponseP2)
+        public ApduResponse Exchange(byte[] command, byte getResponseP2, bool drainSelectResponse = true)
         {
             if (command == null)
             {
@@ -122,6 +123,12 @@ namespace ThaiNationalIDCard.Protocol
                     }
                 }
 
+                if (discard && !drainSelectResponse && lastSw1 == Sw1ResponsePending)
+                {
+                    AddTrace(current, round, getResponseP2, bodyLength, (lastSw1 << 8) | lastSw2, stepFlags, CommandVerdict.Allowed, CardFailureKind.None);
+                    return Finish(Array.Empty<byte>(), firstSw1, firstSw2, flags);
+                }
+
                 if (lastSw1 == Sw1ResponsePending)
                 {
                     int available = lastSw2 == 0 ? ShortResponseLimit : lastSw2;
@@ -196,6 +203,9 @@ namespace ThaiNationalIDCard.Protocol
                 return Finish(success ? Slice(data, count) : Array.Empty<byte>(), lastSw1, lastSw2, flags);
             }
         }
+
+        /// <summary>Adds a workflow decision to the trace, in order with the commands.</summary>
+        public void AddEvent(TraceEntry entry) => _trace.Add(entry);
 
         private static ApduResponse Finish(byte[] data, byte sw1, byte sw2, ExchangeFlags flags) =>
             new ApduResponse(data, sw1, sw2, flags);

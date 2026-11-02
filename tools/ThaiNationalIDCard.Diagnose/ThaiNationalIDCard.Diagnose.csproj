@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ThaiNationalIDCard.Diagnose</RootNamespace>
+    <AssemblyName>thaiid-diagnose</AssemblyName>
+  </PropertyGroup>
+
+  <!-- dotnet tool package. Publishing it is a manual decision, nothing here does it. -->
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>thaiid-diagnose</ToolCommandName>
+    <PackageId>ThaiNationalIDCard.Diagnose</PackageId>
+    <Description>Trace tool for Thai National ID card readers: prints status words, lengths and pass or fail, and never card data. Preview: not tested on a real card yet.</Description>
+    <PackageTags>thai;thailand;national-id;smartcard;pcsc;diagnostics</PackageTags>
+    <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/chakphanu/ThaiNationalIDCard</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/chakphanu/ThaiNationalIDCard</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>hardware-test.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ThaiNationalIDCard\ThaiNationalIDCard.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ThaiNationalIDCard.Diagnose.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\hardware-test.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

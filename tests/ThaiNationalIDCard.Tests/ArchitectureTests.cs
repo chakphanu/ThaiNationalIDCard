@@ -35,6 +35,8 @@ namespace ThaiNationalIDCard.Tests
         [InlineData("ThaiNationalIDCard.Protocol")]
         [InlineData("ThaiNationalIDCard.Card")]
         [InlineData("ThaiNationalIDCard.Hardware")]
+        [InlineData("ThaiNationalIDCard.Workflow")]
+        [InlineData("ThaiNationalIDCard.Parsing")]
         public void Namespace_does_not_reference_pcsc_types(string ns)
         {
             List<Type> types = TypesIn(ns).ToList();
@@ -48,6 +50,8 @@ namespace ThaiNationalIDCard.Tests
         [InlineData("ThaiNationalIDCard.Card")]
         [InlineData("ThaiNationalIDCard.Hardware")]
         [InlineData("ThaiNationalIDCard.Hardware.Pcsc")]
+        [InlineData("ThaiNationalIDCard.Workflow")]
+        [InlineData("ThaiNationalIDCard.Parsing")]
         public void New_namespaces_do_not_reference_legacy_classes(string ns)
         {
             List<Type> types = TypesIn(ns).ToList();
@@ -63,6 +67,28 @@ namespace ThaiNationalIDCard.Tests
 
             Assert.DoesNotContain(referenced, t => t.Namespace != null && t.Namespace.StartsWith(Root + ".Hardware", StringComparison.Ordinal));
             Assert.DoesNotContain(referenced, t => t.Namespace == Root + ".Protocol");
+        }
+
+        [Fact]
+        public void Parsing_does_not_depend_on_hardware_protocol_or_workflow()
+        {
+            Type[] referenced = TypesIn("ThaiNationalIDCard.Parsing").SelectMany(ReferencedTypes).ToArray();
+
+            Assert.Contains(referenced, t => t.Namespace == Root + ".Card");
+            Assert.DoesNotContain(referenced, t => t.Namespace != null && t.Namespace.StartsWith(Root + ".Hardware", StringComparison.Ordinal));
+            Assert.DoesNotContain(referenced, t => t.Namespace == Root + ".Protocol" || t.Namespace == Root + ".Workflow");
+        }
+
+        [Fact]
+        public void Workflow_has_no_way_to_wait_except_the_injected_delay()
+        {
+            // Thread.Sleep or Task.Delay here could end up inside the transaction, where Windows resets an idle card.
+            Type[] waiting = { typeof(System.Threading.Thread), typeof(System.Threading.Tasks.Task), typeof(System.Threading.Timer), typeof(System.Threading.SpinWait) };
+            List<string> found = TypesIn("ThaiNationalIDCard.Workflow")
+                .SelectMany(t => ReferencedTypes(t).Where(waiting.Contains).Select(r => t.Name + " -> " + r.Name))
+                .ToList();
+
+            Assert.Empty(found);
         }
 
         [Fact]

@@ -46,6 +46,9 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ThaiNationalIDCard.Tests" />
+    <InternalsVisibleTo Include="ThaiNationalIDCard.Diagnose.Tests" />
+    <!-- The trace tool ships before the public API of step 8 exists. -->
+    <InternalsVisibleTo Include="thaiid-diagnose" />
   </ItemGroup>
 
   <ItemGroup>
