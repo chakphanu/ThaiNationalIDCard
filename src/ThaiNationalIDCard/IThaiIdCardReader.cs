@@ -29,7 +29,6 @@ namespace ThaiNationalIDCard
         /// <exception cref="ReadCanceledException">The read was cancelled while it was running.</exception>
         /// <exception cref="System.OperationCanceledException">The token was already cancelled.</exception>
         /// <exception cref="System.ArgumentException">The reader name is null or empty.</exception>
-        /// <exception cref="System.NotSupportedException">The options ask for a mode that is not available yet.</exception>
         Task<ThaiIdCardData> ReadAsync(string readerName, ReadOptions? options, CancellationToken cancellationToken);
 
         /// <summary>

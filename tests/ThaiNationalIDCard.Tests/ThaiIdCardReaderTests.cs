@@ -137,25 +137,6 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
-        public async Task Private_mode_is_refused_before_anything_touches_the_card()
-        {
-            int channels = 0;
-            SimulatedCard card = Card();
-            var reader = new ThaiIdCardReader(() =>
-            {
-                channels++;
-                return card;
-            });
-
-            await Assert.ThrowsAsync<NotSupportedException>(() =>
-                reader.ReadAsync(card.ReaderName, new ReadOptions { Mode = CardReadMode.PublicAndPrivate }, Ct));
-
-            Assert.Equal(0, channels);
-            Assert.Equal(0, card.ConnectCalls);
-            Assert.Equal(0, card.TransmitCount);
-        }
-
-        [Fact]
         public async Task An_undefined_mode_is_refused()
         {
             SimulatedCard card = Card();

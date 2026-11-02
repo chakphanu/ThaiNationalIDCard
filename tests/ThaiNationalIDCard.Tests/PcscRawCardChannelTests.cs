@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using PCSC;
 using PCSC.Exceptions;
 using ThaiNationalIDCard.Hardware;
@@ -465,11 +467,159 @@ namespace ThaiNationalIDCard.Tests
 
             monitor.Dispose();
             monitor.Dispose();
+            Assert.True(rig.Monitor.Disposed.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
             Assert.Equal(1, rig.Monitor.DisposeCalls);
             Assert.Equal(0, rig.Monitor.SubscriberCount);
         }
 
+        [Fact]
+        public void Monitor_dispose_cancels_now_and_disposes_the_pcsc_monitor_later_on_another_thread()
+        {
+            var pcsc = new FakePcscMonitor();
+            var grace = new TaskCompletionSource<bool>();
+            var monitor = new PcscReaderMonitor(pcsc, () => grace.Task);
+
+            monitor.Dispose();
+
+            Assert.Equal(1, pcsc.CancelCalls);
+            Assert.Equal(0, pcsc.DisposeCalls);
+            Assert.Equal(0, pcsc.SubscriberCount);
+
+            monitor.Dispose();
+            grace.SetResult(true);
+
+            Assert.True(pcsc.Disposed.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+            Assert.Equal(1, pcsc.DisposeCalls);
+            Assert.Equal(1, pcsc.CancelCallsAtDispose);
+            Assert.NotEqual(Environment.CurrentManagedThreadId, pcsc.DisposeThreadId);
+        }
+
+        [Fact]
+        public void Monitor_dispose_swallows_pcsc_failures_on_both_steps()
+        {
+            var pcsc = new FakePcscMonitor
+            {
+                CancelThrows = new NoServiceException(SCardError.NoService),
+                DisposeThrows = new NoServiceException(SCardError.NoService),
+            };
+            var monitor = new PcscReaderMonitor(pcsc, () => Task.CompletedTask);
+
+            monitor.Dispose();
+
+            Assert.True(pcsc.Disposed.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+            Assert.Equal(1, pcsc.CancelCalls);
+        }
+
+        [Fact]
+        public void Monitor_forwards_nothing_after_dispose()
+        {
+            var pcsc = new FakePcscMonitor();
+            var monitor = new PcscReaderMonitor(pcsc, () => Task.CompletedTask);
+            int events = 0;
+            monitor.CardInserted += (s, e) => events++;
+            monitor.CardRemoved += (s, e) => events++;
+            monitor.Failed += (s, e) => events++;
+
+            monitor.Dispose();
+            pcsc.RaiseInserted("R0", new byte[] { 0x3B });
+            pcsc.RaiseRemoved("R0");
+            pcsc.RaiseFailure(new NoServiceException(SCardError.NoService));
+            pcsc.RaiseInitialized("R0", SCRState.Present, new byte[] { 0x3B });
+
+            Assert.Equal(0, events);
+        }
+
+        [Fact]
+        public void Monitor_counts_a_card_already_present_at_start_as_inserted_and_an_empty_reader_as_nothing()
+        {
+            var pcsc = new FakePcscMonitor();
+            using var monitor = new PcscReaderMonitor(pcsc, () => Task.CompletedTask);
+            var inserted = new List<ReaderCardEventArgs>();
+            monitor.CardInserted += (s, e) => inserted.Add(e);
+
+            pcsc.RaiseInitialized("R0", SCRState.Empty, Array.Empty<byte>());
+            pcsc.RaiseInitialized("R1", SCRState.Unavailable, Array.Empty<byte>());
+            pcsc.RaiseInitialized("R2", SCRState.Present | SCRState.InUse, new byte[] { 0x3B, 0x67 });
+
+            ReaderCardEventArgs only = Assert.Single(inserted);
+            Assert.Equal("R2", only.ReaderName);
+            Assert.Equal(new byte[] { 0x3B, 0x67 }, only.Atr);
+        }
+
+        [Fact]
+        public void A_reader_that_does_not_exist_reaches_the_public_error_event_and_its_pcsc_monitor_is_retired()
+        {
+            var pcsc = new FakePcscMonitor();
+            using var monitor = new ThaiIdCardMonitor(() => new PcscReaderMonitor(pcsc, () => Task.CompletedTask), () => new[] { "R0" });
+            using var seen = new ManualResetEventSlim();
+            ThaiIdCardMonitorErrorEventArgs? error = null;
+            monitor.MonitorError += (s, e) =>
+            {
+                error = e;
+                seen.Set();
+            };
+
+            monitor.Start();
+            pcsc.RaiseFailure(new PCSCException(SCardError.UnknownReader));
+
+            Assert.True(seen.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+            Assert.Equal("R0", error!.ReaderName);
+            Assert.Equal(CardFailureKind.ReaderNotFound, error.Failure);
+            Assert.False(monitor.IsRunning);
+
+            // In PCSC 7.0.1 Monitoring stays true after this until Cancel, so nothing may rely on it or reuse the object.
+            Assert.True(pcsc.Disposed.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+            Assert.True(pcsc.CancelCalls >= 1);
+            Assert.Equal(0, pcsc.SubscriberCount);
+        }
+
+        [Fact]
+        public void The_public_monitor_on_this_machine_fails_only_with_library_exceptions()
+        {
+            using var monitor = new ThaiIdCardMonitor();
+
+            try
+            {
+                monitor.Start();
+                monitor.Stop();
+            }
+            catch (ThaiIdCardException ex)
+            {
+                Assert.False(monitor.IsRunning);
+                Assert.Contains(ex.Failure, new[] { CardFailureKind.ServiceUnavailable, CardFailureKind.ReaderNotFound, CardFailureKind.Communication });
+            }
+        }
+
         // ---- real PC/SC library, no hardware required ----
+
+        [Fact]
+        public void Real_scard_monitor_reports_a_reader_that_does_not_exist_through_the_public_error_event()
+        {
+            // The real SCardMonitor when a service is there, and a library exception from Start when none is. It says nothing about
+            // any reader or card.
+            using var monitor = new ThaiIdCardMonitor();
+            using var seen = new ManualResetEventSlim();
+            ThaiIdCardMonitorErrorEventArgs? error = null;
+            monitor.MonitorError += (s, e) =>
+            {
+                error = e;
+                seen.Set();
+            };
+
+            try
+            {
+                monitor.Start(new[] { "Synthetic Reader That Does Not Exist" });
+            }
+            catch (ThaiIdCardException)
+            {
+                return;
+            }
+
+            Assert.True(seen.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+            Assert.Equal("Synthetic Reader That Does Not Exist", error!.ReaderName);
+            Assert.Contains(error.Failure, new[] { CardFailureKind.ReaderNotFound, CardFailureKind.ServiceUnavailable });
+            Assert.False(monitor.IsRunning);
+        }
 
         [Fact]
         public void Real_pcsc_library_only_gives_library_exceptions_on_a_machine_without_hardware_assumptions()

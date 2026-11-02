@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using PCSC;
 using PCSC.Exceptions;
 using PCSC.Monitoring;
@@ -281,17 +283,34 @@ namespace ThaiNationalIDCard.Hardware.Pcsc
         }
     }
 
-    /// <summary>PC/SC monitor behind the seam. PCSC event arguments and errors do not pass through it.</summary>
+    /// <summary>
+    /// PC/SC monitor behind the seam. PCSC event arguments and errors do not pass through it.
+    /// <para>
+    /// Why Dispose is two steps: SCardMonitor.Dispose in PCSC 7.0.1 calls Cancel and then disposes its context right away. It
+    /// does not join its monitor thread, which can still be inside SCardGetStatusChange on that context or on its way in. It also
+    /// offers no way to wait: the thread is private, and Monitoring only says whether Cancel was called, as it stays true after
+    /// the thread has ended on an error. So Dispose here cancels at once and stops forwarding events, and leaves
+    /// SCardMonitor.Dispose to a thread pool task after a grace period. That gives the thread time to leave, and no caller's
+    /// thread can block on it if the native call hangs, which also makes Dispose safe from a handler. This narrows the race and
+    /// cannot rule it out, since the thread cannot be joined. If the process ends first, the OS releases the context.
+    /// </para>
+    /// </summary>
     internal sealed class PcscReaderMonitor : IReaderMonitor
     {
-        private readonly ISCardMonitor _monitor;
-        private bool _disposed;
+        // Defensive value, not a PC/SC fact: longer than a cancelled wait should take to return.
+        private static readonly TimeSpan RetireGrace = TimeSpan.FromSeconds(1);
 
-        public PcscReaderMonitor(ISCardMonitor monitor)
+        private readonly ISCardMonitor _monitor;
+        private readonly Func<Task> _retireAfter;
+        private int _disposed;
+
+        public PcscReaderMonitor(ISCardMonitor monitor, Func<Task>? retireAfter = null)
         {
             _monitor = monitor;
+            _retireAfter = retireAfter ?? (() => Task.Delay(RetireGrace));
             _monitor.CardInserted += OnInserted;
             _monitor.CardRemoved += OnRemoved;
+            _monitor.Initialized += OnInitialized;
             _monitor.MonitorException += OnException;
         }
 
@@ -321,16 +340,52 @@ namespace ThaiNationalIDCard.Hardware.Pcsc
 
         public void Dispose()
         {
-            if (_disposed)
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
             {
                 return;
             }
 
-            _disposed = true;
             _monitor.CardInserted -= OnInserted;
             _monitor.CardRemoved -= OnRemoved;
+            _monitor.Initialized -= OnInitialized;
             _monitor.MonitorException -= OnException;
-            _monitor.Dispose();
+
+            try
+            {
+                _monitor.Cancel();
+            }
+#pragma warning disable CA1031 // Dispose must not throw, and the disposal below still has to run.
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+            }
+
+            _retireAfter().ContinueWith(_ => DisposeQuietly(_monitor), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+        }
+
+        private static void DisposeQuietly(ISCardMonitor monitor)
+        {
+            try
+            {
+                monitor.Dispose();
+            }
+#pragma warning disable CA1031 // This runs on a thread pool thread with nobody to tell.
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+            }
+        }
+
+        /// <summary>
+        /// SCardMonitor raises CardInserted only on a change, so a card already there at the start has only this event. PCSC 7.0.1
+        /// raises it once per reader after Start. A bad state of a reader shows in its next events or as a failure.
+        /// </summary>
+        private void OnInitialized(object sender, CardStatusEventArgs e)
+        {
+            if ((e.State & SCRState.Present) != 0)
+            {
+                CardInserted?.Invoke(this, new ReaderCardEventArgs(e.ReaderName, e.Atr));
+            }
         }
 
         private void OnInserted(object sender, CardStatusEventArgs e) =>

@@ -161,6 +161,9 @@ namespace ThaiNationalIDCard.Tests
         [InlineData(typeof(ThaiIdCardName))]
         [InlineData(typeof(ThaiIdCardAddress))]
         [InlineData(typeof(ThaiCardDate))]
+        [InlineData(typeof(ThaiIdCardPrivateData))]
+        [InlineData(typeof(ThaiIdCardNhsoData))]
+        [InlineData(typeof(CardRawValue))]
         public void Types_holding_card_data_declare_their_own_to_string_and_have_no_public_setter(Type type)
         {
             Assert.Equal(type, type.GetMethod("ToString", Type.EmptyTypes)!.DeclaringType);
@@ -168,10 +171,14 @@ namespace ThaiNationalIDCard.Tests
             Assert.Empty(type.GetFields(BindingFlags.Public | BindingFlags.Instance).Select(f => f.Name));
         }
 
-        [Fact]
-        public void The_data_type_exposes_no_array_a_caller_could_change()
+        [Theory]
+        [InlineData(typeof(ThaiIdCardData))]
+        [InlineData(typeof(ThaiIdCardPrivateData))]
+        [InlineData(typeof(ThaiIdCardNhsoData))]
+        [InlineData(typeof(CardRawValue))]
+        public void The_data_types_expose_no_array_a_caller_could_change(Type type)
         {
-            Assert.DoesNotContain(typeof(ThaiIdCardData).GetProperties(), p => p.PropertyType.IsArray);
+            Assert.DoesNotContain(type.GetProperties(), p => p.PropertyType.IsArray);
         }
 
         [Fact]

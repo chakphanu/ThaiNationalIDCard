@@ -96,6 +96,19 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
+        public void The_monitor_has_no_way_to_read_a_card()
+        {
+            Type[] reading = { typeof(Hardware.GuardedCardConnection), typeof(Workflow.CardReadWorkflow), typeof(ThaiIdCardReader), typeof(Protocol.ApduExchange) };
+            List<Type> referenced = typeof(ThaiIdCardMonitor).Assembly.GetTypes()
+                .Where(t => t == typeof(ThaiIdCardMonitor) || (t.FullName ?? string.Empty).StartsWith(typeof(ThaiIdCardMonitor).FullName + "+", StringComparison.Ordinal))
+                .SelectMany(ReferencedTypes)
+                .ToList();
+
+            Assert.Contains(typeof(Hardware.IReaderMonitor), referenced);
+            Assert.DoesNotContain(referenced, reading.Contains);
+        }
+
+        [Fact]
         public void Scanner_control_it_finds_pcsc_in_the_adapter()
         {
             // Without this the tests above could pass because the scanner finds nothing.

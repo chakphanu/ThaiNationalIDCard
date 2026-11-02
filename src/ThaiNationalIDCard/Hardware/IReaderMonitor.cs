@@ -4,8 +4,10 @@ using System.Collections.Generic;
 namespace ThaiNationalIDCard.Hardware
 {
     /// <summary>
-    /// Watches readers for card changes. Events are raised on the monitor thread, so handlers must not
-    /// read the card there. Multi-reader behaviour above this seam belongs to step 10.
+    /// Watches readers for card changes. Events are raised on the monitor thread, so handlers must not read the card there or
+    /// wait for anything. <see cref="ThaiIdCardMonitor"/> is the only subscriber and only queues. Dispose must not block on
+    /// the monitor thread, because <see cref="ThaiIdCardMonitor.Stop"/> can run inside a handler. A monitor is used once: a new
+    /// watch gets a new one, since PCSC keeps reporting Monitoring until Cancel even after its thread ended on an error.
     /// </summary>
     internal interface IReaderMonitor : IDisposable
     {

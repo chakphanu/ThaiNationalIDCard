@@ -351,7 +351,7 @@ namespace ThaiNationalIDCard.Tests
             return new byte[] { 0x6D, 0x00 };
         }
 
-        /// <summary>The shape assumed here, 61 10 then 16 bytes, follows the plan and was not seen on a card.</summary>
+        /// <summary>The shape assumed here, 7 bytes with 61 10 and then 16 bytes, is the inference in the plan. No card showed it.</summary>
         private byte[] AnswerAppletData()
         {
             if (_selected != AdmAidHex)
@@ -360,18 +360,20 @@ namespace ThaiNationalIDCard.Tests
             }
 
             byte[] image = _applets[_selected];
-            const int Length = 0x10;
+            const int Header = 7;
+            const int Rest = 0x10;
             if (Mode == SimReaderMode.DirectAnswer)
             {
-                Answered.Add(new AnsweredRange(_selected, 0, Length));
-                return image.Take(Length).Concat(new byte[] { 0x90, 0x00 }).ToArray();
+                Answered.Add(new AnsweredRange(_selected, 0, Header + Rest));
+                return image.Take(Header + Rest).Concat(new byte[] { 0x90, 0x00 }).ToArray();
             }
 
+            Answered.Add(new AnsweredRange(_selected, 0, Header));
             _pendingSource = image;
             _pendingApplet = _selected;
-            _pendingOffset = 0;
-            _pendingRemaining = Length;
-            return new byte[] { 0x61, Length };
+            _pendingOffset = Header;
+            _pendingRemaining = Rest;
+            return image.Take(Header).Concat(new byte[] { 0x61, Rest }).ToArray();
         }
 
         private byte[] AnswerSelect(byte[] c)
@@ -475,9 +477,11 @@ namespace ThaiNationalIDCard.Tests
         private byte Announce(int available) => (byte)(Math.Min(available, ChainSize) & 0xFF);
     }
 
-    /// <summary>Monitor for tests: the test raises the events by hand.</summary>
+    /// <summary>Monitor for tests: the test raises the events by hand, on whatever thread it wants to stand for the monitor thread.</summary>
     internal sealed class SimulatedReaderMonitor : IReaderMonitor
     {
+        private int _disposeCalls;
+
         public event EventHandler<ReaderCardEventArgs>? CardInserted;
 
         public event EventHandler<ReaderCardEventArgs>? CardRemoved;
@@ -488,12 +492,31 @@ namespace ThaiNationalIDCard.Tests
 
         public bool Stopped { get; private set; }
 
-        public void Start(IReadOnlyList<string> readerNames) => StartedReaders = readerNames;
+        public Exception? StartThrows { get; set; }
+
+        public int DisposeCalls => System.Threading.Volatile.Read(ref _disposeCalls);
+
+        public System.Threading.ManualResetEventSlim Disposed { get; } = new System.Threading.ManualResetEventSlim();
+
+        public int SubscriberCount =>
+            (CardInserted?.GetInvocationList().Length ?? 0) + (CardRemoved?.GetInvocationList().Length ?? 0) + (Failed?.GetInvocationList().Length ?? 0);
+
+        public void Start(IReadOnlyList<string> readerNames)
+        {
+            if (StartThrows != null)
+            {
+                throw StartThrows;
+            }
+
+            StartedReaders = readerNames;
+        }
 
         public void Stop() => Stopped = true;
 
         public void Dispose()
         {
+            System.Threading.Interlocked.Increment(ref _disposeCalls);
+            Disposed.Set();
         }
 
         public void RaiseInserted(string reader, byte[] atr) => CardInserted?.Invoke(this, new ReaderCardEventArgs(reader, atr));
@@ -540,6 +563,17 @@ namespace ThaiNationalIDCard.Tests
         static SyntheticImage()
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        }
+
+        /// <summary>A made up ADM image with the assumed shape: 7 bytes, a 12 character value, 4 NUL, then filler.</summary>
+        public static byte[] AdmImage(string value = "AB1234567890")
+        {
+            var image = new byte[0x40];
+            Fill(image, 0, 7, 0x78);
+            Fill(image, 23, image.Length - 23, 0x79);
+            byte[] text = Encoding.ASCII.GetBytes(value);
+            Array.Copy(text, 0, image, 7, text.Length);
+            return image;
         }
 
         public static byte[] Tis(string text) => Encoding.GetEncoding("TIS-620").GetBytes(text);

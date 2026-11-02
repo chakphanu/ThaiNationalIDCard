@@ -968,7 +968,7 @@ namespace ThaiNationalIDCard.Tests
         {
             var card = new SimulatedCard();
             card.AddApplet(SimulatedCard.NhsoAidHex, Enumerable.Repeat((byte)0x76, 0x200).ToArray());
-            card.AddApplet(SimulatedCard.AdmAidHex, Enumerable.Repeat((byte)0x77, 0x40).ToArray());
+            card.AddApplet(SimulatedCard.AdmAidHex, SyntheticImage.AdmImage());
             return card;
         }
 
@@ -1026,7 +1026,7 @@ namespace ThaiNationalIDCard.Tests
                 result.Fields.Select(f => f.Info.Id));
             Assert.All(result.Fields, f => Assert.Equal(FieldQuality.Ok, f.Info.Quality));
             Assert.Equal(new byte[] { 0x73, 0x73 }, result.Get(CardFieldId.MoiRaw0177).Data);
-            Assert.Equal(16, result.Get(CardFieldId.AdmAppletData).Data!.Length);
+            Assert.Equal(23, result.Get(CardFieldId.AdmAppletData).Data!.Length);
             Assert.Equal(1, Flow.Events(result.Diagnostics.Trace, TraceEvent.EnteringNhso));
             Assert.Equal(1, Flow.Events(result.Diagnostics.Trace, TraceEvent.EnteringAdm));
             Assert.Contains("8000000007", card.ReceivedHex);
@@ -1045,7 +1045,7 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
-        public void Chip_data_commands_are_never_sent_in_step_5()
+        public void Chip_data_commands_are_never_sent()
         {
             SimulatedCard card = WithPrivateApplets();
 
@@ -1078,7 +1078,7 @@ namespace ThaiNationalIDCard.Tests
         public void One_absent_private_applet_does_not_stop_the_other()
         {
             var card = new SimulatedCard();
-            card.AddApplet(SimulatedCard.AdmAidHex, Enumerable.Repeat((byte)0x77, 0x40).ToArray());
+            card.AddApplet(SimulatedCard.AdmAidHex, SyntheticImage.AdmImage());
 
             CardReadResult result = Flow.Read(card, mode: CardReadMode.PublicAndPrivate);
 

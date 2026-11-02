@@ -94,7 +94,12 @@ namespace ThaiNationalIDCard.Diagnose.Tests
             Array.Copy(thai, 0, image, ThaiNationalIDCard.Tests.SyntheticImage.PersonInfo, thai.Length);
 
             card.AddApplet(ThaiNationalIDCard.Tests.SimulatedCard.NhsoAidHex, Fill(0x200, marker));
-            card.AddApplet(ThaiNationalIDCard.Tests.SimulatedCard.AdmAidHex, Fill(0x40, marker));
+
+            // The value slot has the assumed shape and still holds the sentinel: 7 + 12 characters + 4 NUL.
+            byte[] adm = Fill(0x40, marker);
+            Array.Copy(Encoding.ASCII.GetBytes("SENTINELZQX0"), 0, adm, 7, 12);
+            Array.Clear(adm, 19, 4);
+            card.AddApplet(ThaiNationalIDCard.Tests.SimulatedCard.AdmAidHex, adm);
             card.SelectBlob = Fill(10, marker);
             return card;
         }

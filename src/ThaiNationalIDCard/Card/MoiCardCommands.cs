@@ -42,7 +42,10 @@ namespace ThaiNationalIDCard.Card
             };
         }
 
-        /// <summary>80 00 00 00 07: the only known form of the applet data command, taken from public code.</summary>
+        /// <summary>
+        /// 80 00 00 00 07, the form go-thai and libthai-idcard send. Advanced-Logic sends it with no Le and repeats it with the Le a
+        /// 6C xx asks for, which the guard does not allow, so such a card shows as a failed field with that status.
+        /// </summary>
         public static byte[] AppletData() => new byte[] { 0x80, 0x00, 0x00, 0x00, 0x07 };
 
         /// <summary>The READ ranges of one field: full chunks, then whatever is left.</summary>

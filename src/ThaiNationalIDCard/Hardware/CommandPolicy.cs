@@ -23,7 +23,7 @@ namespace ThaiNationalIDCard.Hardware
         private const int ShortCommandLength = 5;
         private const int SelectHeaderLength = 5;
 
-        // The 80 00 00 00 command is only known with this length from public code.
+        // The one form of 80 00 00 00 this library sends. Public code also has other forms, see MoiCardCommands.AppletData.
         private const byte AppletDataLe = 0x07;
 
         // ISO write, life cycle and reference data instructions. They are refused in every class because the
@@ -45,9 +45,11 @@ namespace ThaiNationalIDCard.Hardware
         public static CommandPolicy Public { get; } = new CommandPolicy(MoiProfile.Public);
 
         /// <summary>
-        /// Adds SELECT of ADM and NHSO, the private MOI ranges, the NHSO ranges and 80 00 00 00 in ADM.
-        /// TODO(step 9): chip data (SELECT without AID, then 80 CA 9F 7F) is left out on purpose. The plan requires
-        /// re-checking that SELECT against source first. Until then this policy refuses both commands.
+        /// Adds SELECT of ADM and NHSO, the private MOI ranges, the NHSO ranges and 80 00 00 00 07 in ADM.
+        /// Chip data stays refused here too, on purpose. The only public source, Advanced-Logic ThaiSmartCard.java at 941e97d,
+        /// sends 00 A4 04 00 and then 80 CA 9F 7F, neither with a length, and both follow a 6C xx with a Le the card picks. That
+        /// SELECT names no applet, so which one it leaves selected is up to the card and no source says, and every READ range
+        /// here belongs to a known applet. Rules for it would be wider than an exact command, so there are none.
         /// </summary>
         public static CommandPolicy PublicAndPrivate { get; } =
             new CommandPolicy(MoiProfile.PublicAndPrivate, NhsoProfile.Instance, AdmProfile.Instance);

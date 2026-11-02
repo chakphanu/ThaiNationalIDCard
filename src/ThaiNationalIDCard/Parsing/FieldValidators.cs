@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Text;
 using ThaiNationalIDCard.Card;
 
 namespace ThaiNationalIDCard.Parsing
@@ -46,9 +48,45 @@ namespace ThaiNationalIDCard.Parsing
                     return IsTis620(data, 0, data.Length) ? ValidationFailures.None : ValidationFailures.TextEncoding;
                 case FieldCheck.Jpeg:
                     return CheckJpeg(data);
+                case FieldCheck.AdmAppletData:
+                    return CheckAdmAppletData(data);
                 default:
                     return ValidationFailures.None;
             }
+        }
+
+        /// <summary>
+        /// The text in the value slot of the ADM answer, without its NUL padding. Null unless the answer has the whole assumed
+        /// length and the slot holds visible ASCII only: cutting at a guessed place could hand out a wrong value that looks right.
+        /// See ASSUMPTION(adm-layout) in <see cref="AdmProfile"/>.
+        /// </summary>
+        public static string? AdmSlotText(byte[] data)
+        {
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (data.Length != AdmProfile.AppletDataLength)
+            {
+                return null;
+            }
+
+            int end = data.Length;
+            while (end > AdmProfile.HeaderLength && data[end - 1] == 0)
+            {
+                end--;
+            }
+
+            for (int i = AdmProfile.HeaderLength; i < end; i++)
+            {
+                if (data[i] <= (byte)' ' || data[i] > (byte)'~')
+                {
+                    return null;
+                }
+            }
+
+            return end == AdmProfile.HeaderLength ? null : Encoding.ASCII.GetString(data, AdmProfile.HeaderLength, end - AdmProfile.HeaderLength);
         }
 
         /// <summary>True when the range exists and holds ASCII digits only. Thai digits do not count.</summary>
@@ -166,6 +204,15 @@ namespace ThaiNationalIDCard.Parsing
             }
 
             return result;
+        }
+
+        /// <summary>See ASSUMPTION(adm-layout) and ASSUMPTION(laser-format) in <see cref="AdmProfile"/>. This only marks.</summary>
+        private static ValidationFailures CheckAdmAppletData(byte[] data)
+        {
+            string? text = AdmSlotText(data);
+            bool good = text != null && text.Length == AdmProfile.LaserTextLength &&
+                text.All(c => (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
+            return good ? ValidationFailures.None : ValidationFailures.AppletDataShape;
         }
 
         private static ValidationFailures CheckAddress(byte[] data)

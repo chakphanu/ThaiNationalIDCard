@@ -161,6 +161,32 @@ namespace ThaiNationalIDCard.Diagnose.Tests
         }
 
         [Fact]
+        public void Private_mode_shows_the_applet_data_exchange_by_status_and_length()
+        {
+            ToolRun run = Tool.Run(SentinelCard.Build(), "--mode", "private");
+
+            Assert.Contains("kind=AppletData received=7 sw=6110", run.Stdout, StringComparison.Ordinal);
+            Assert.Contains("kind=GetResponse requested=16 received=16 sw=9000", run.Stdout, StringComparison.Ordinal);
+            Assert.Contains("AdmAppletData: pass quality=Ok sw=9000 received=23", run.Stdout, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void Private_mode_reports_a_wrong_applet_data_shape_without_the_value()
+        {
+            SimulatedCard card = SentinelCard.Build();
+            card.AnswerOverride = (position, command) => ApduText.Hex(command) == "8000000007"
+                ? SentinelCard.Fill(7, Encoding.ASCII.GetBytes(SentinelCard.Text)).Concat(new byte[] { 0x90, 0x00 }).ToArray()
+                : null;
+
+            ToolRun run = Tool.Run(card, "--mode", "private");
+
+            Assert.Equal(ExitCodes.Success, run.ExitCode);
+            Assert.Contains("AdmAppletData: fail quality=Suspect sw=9000 received=7", run.Stdout, StringComparison.Ordinal);
+            Assert.Contains("checks_failed=AppletDataShape", run.Stdout, StringComparison.Ordinal);
+            Assert.DoesNotContain("SENTINEL", run.All, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void Public_mode_does_not_read_private_areas()
         {
             SimulatedCard card = SentinelCard.Build();
@@ -216,6 +242,17 @@ namespace ThaiNationalIDCard.Diagnose.Tests
                 Assert.Contains(area, privateRun.Stdout, StringComparison.Ordinal);
                 Assert.DoesNotContain(area, publicRun.Stdout, StringComparison.Ordinal);
             }
+        }
+
+        [Fact]
+        public void Private_notice_is_honest_about_chip_data_and_the_laser_guess()
+        {
+            ToolRun run = Tool.Run(new SimulatedCard(), "--mode", "private");
+
+            string notice = run.Stdout.Substring(0, run.Stdout.IndexOf("tool version", StringComparison.Ordinal));
+            Assert.Contains("Chip data is not read", notice, StringComparison.Ordinal);
+            Assert.Contains("public code suggests", notice, StringComparison.Ordinal);
+            Assert.Contains("Laser ID", notice, StringComparison.Ordinal);
         }
 
         [Fact]

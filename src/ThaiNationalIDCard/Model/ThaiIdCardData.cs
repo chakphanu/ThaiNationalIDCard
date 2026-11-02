@@ -120,10 +120,12 @@ namespace ThaiNationalIDCard
         /// <param name="photoFailure">Why a photo that was asked for is missing.</param>
         /// <param name="quality">Quality per field.</param>
         /// <param name="diagnostics">Diagnostics of the read.</param>
+        /// <param name="privateData">What private mode added. Null for a public read.</param>
         public ThaiIdCardData(string? citizenId = null, ThaiIdCardName? thaiName = null, ThaiIdCardName? englishName = null,
             ThaiCardDate? birthDate = null, CardSex sex = CardSex.Unknown, byte? sexRaw = null, ThaiIdCardAddress? address = null,
             ThaiCardDate? issueDate = null, ThaiCardDate? expiryDate = null, string? issuer = null, byte[]? photo = null,
-            PhotoFailureReason photoFailure = PhotoFailureReason.None, ThaiIdCardQuality? quality = null, ReadDiagnostics? diagnostics = null)
+            PhotoFailureReason photoFailure = PhotoFailureReason.None, ThaiIdCardQuality? quality = null, ReadDiagnostics? diagnostics = null,
+            ThaiIdCardPrivateData? privateData = null)
         {
             CitizenId = citizenId;
             ThaiName = thaiName ?? new ThaiIdCardName();
@@ -139,6 +141,7 @@ namespace ThaiNationalIDCard
             PhotoFailure = photoFailure;
             Quality = quality ?? new ThaiIdCardQuality();
             Diagnostics = diagnostics ?? ReadDiagnostics.Empty();
+            Private = privateData;
         }
 
         /// <summary>The citizen ID as the card holds it, even when malformed. Null when not read.</summary>
@@ -191,6 +194,9 @@ namespace ThaiNationalIDCard
 
         /// <summary>Diagnostics of the read, which hold no card data. Empty for data built by hand.</summary>
         public ReadDiagnostics Diagnostics { get; }
+
+        /// <summary>What <see cref="CardReadMode.PublicAndPrivate"/> added. Null in <see cref="CardReadMode.Public"/>.</summary>
+        public ThaiIdCardPrivateData? Private { get; }
 
         /// <summary>The photo as JPEG bytes, from the start marker through the end marker.</summary>
         /// <returns>A new copy of the bytes, or null when there is no photo.</returns>

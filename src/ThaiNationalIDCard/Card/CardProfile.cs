@@ -44,6 +44,7 @@ namespace ThaiNationalIDCard.Card
         IssueExpire,
         Issuer,
         Jpeg,
+        AdmAppletData,
     }
 
     internal enum FieldAccess
@@ -260,6 +261,17 @@ namespace ThaiNationalIDCard.Card
     /// </summary>
     internal static class AdmProfile
     {
+        // ASSUMPTION(adm-layout): the answer is a 7 byte header followed by a 16 byte slot, 23 bytes in all. This is an inference:
+        // go-thai and libthai-idcard send 80 00 00 00 07 and then GET RESPONSE 10, and Advanced-Logic expects 0x17 bytes with the
+        // value at bytes 7 to 22. 7 + 16 = 0x17 is the one reading that fits them all, and nobody has published a trace of it.
+        public const int HeaderLength = 7;
+        public const int SlotLength = 16;
+        public const int AppletDataLength = HeaderLength + SlotLength;
+
+        // ASSUMPTION(laser-format): the slot holds the Laser ID as 12 ASCII letters or digits, then 4 NUL bytes. This comes from
+        // GoSCApi, which describes a buffer of 12 characters and 4 NUL. No specification says so, and no card here showed it.
+        public const int LaserTextLength = 12;
+
         private static readonly byte[] Aid = { 0xA0, 0x00, 0x00, 0x00, 0x84, 0x06, 0x00, 0x02 };
 
         public static readonly CardProfile Instance = new CardProfile(
@@ -267,6 +279,6 @@ namespace ThaiNationalIDCard.Card
             Enumerable.Empty<FieldRange>(),
             allowsAppletDataCommand: true,
             applet: AppletKind.Adm,
-            fields: new[] { new CardField(CardFieldId.AdmAppletData, default, isPrivate: true, access: FieldAccess.AppletData) });
+            fields: new[] { new CardField(CardFieldId.AdmAppletData, default, FieldCheck.AdmAppletData, isPrivate: true, access: FieldAccess.AppletData) });
     }
 }

@@ -43,9 +43,10 @@ namespace ThaiNationalIDCard.Protocol
         /// Throws <see cref="CommandRejectedException"/> when the guard refuses the command itself. A refused
         /// follow-up comes back as a status with <see cref="ExchangeNotes.FollowUpRejected"/>, because the card
         /// asked for it, not the caller. With <paramref name="drainSelectResponse"/> false, a SELECT answering
-        /// 61 xx stops there and sends no GET RESPONSE.
+        /// 61 xx stops there and sends no GET RESPONSE. <paramref name="maxData"/> limits what a command with no READ range may
+        /// bring back, the same way the Le of a READ does.
         /// </summary>
-        public ApduResponse Exchange(byte[] command, byte getResponseP2, bool drainSelectResponse = true)
+        public ApduResponse Exchange(byte[] command, byte getResponseP2, bool drainSelectResponse = true, int? maxData = null)
         {
             if (command == null)
             {
@@ -54,7 +55,7 @@ namespace ThaiNationalIDCard.Protocol
 
             TraceCommandKind kind = Classify(command);
             bool discard = kind == TraceCommandKind.Select;
-            int capacity = discard ? 0 : RequestedLength(command, kind);
+            int capacity = discard ? 0 : maxData ?? RequestedLength(command, kind);
             var data = new byte[capacity];
             int count = 0;
 

@@ -240,6 +240,17 @@ namespace ThaiNationalIDCard.Tests
 
         public Exception? StartThrows { get; set; }
 
+        public Exception? CancelThrows { get; set; }
+
+        public Exception? DisposeThrows { get; set; }
+
+        /// <summary>Set after every Dispose, so a test can wait for one that runs later on another thread.</summary>
+        public System.Threading.ManualResetEventSlim Disposed { get; } = new System.Threading.ManualResetEventSlim();
+
+        public int DisposeThreadId { get; private set; }
+
+        public int CancelCallsAtDispose { get; private set; }
+
         public event StatusChangeEvent? StatusChanged;
 
         public event CardInsertedEvent? CardInserted;
@@ -262,9 +273,26 @@ namespace ThaiNationalIDCard.Tests
             Started = readerNames;
         }
 
-        public void Cancel() => CancelCalls++;
+        public void Cancel()
+        {
+            CancelCalls++;
+            if (CancelThrows != null)
+            {
+                throw CancelThrows;
+            }
+        }
 
-        public void Dispose() => DisposeCalls++;
+        public void Dispose()
+        {
+            DisposeCalls++;
+            DisposeThreadId = Environment.CurrentManagedThreadId;
+            CancelCallsAtDispose = CancelCalls;
+            Disposed.Set();
+            if (DisposeThrows != null)
+            {
+                throw DisposeThrows;
+            }
+        }
 
         public void RaiseInserted(string reader, byte[] atr) => CardInserted?.Invoke(this, new CardStatusEventArgs(reader, SCRState.Present, atr));
 
@@ -272,15 +300,14 @@ namespace ThaiNationalIDCard.Tests
 
         public void RaiseFailure(PCSC.Exceptions.PCSCException ex) => MonitorException?.Invoke(this, ex);
 
-        public int SubscriberCount =>
-            (CardInserted?.GetInvocationList().Length ?? 0) + (CardRemoved?.GetInvocationList().Length ?? 0) + (MonitorException?.GetInvocationList().Length ?? 0);
+        public void RaiseInitialized(string reader, SCRState state, byte[] atr) => Initialized?.Invoke(this, new CardStatusEventArgs(reader, state, atr));
 
-        // Kept so the interface is complete; the adapter does not use them.
-        public void TouchUnused()
-        {
-            StatusChanged?.Invoke(this, null!);
-            Initialized?.Invoke(this, null!);
-        }
+        public int SubscriberCount =>
+            (CardInserted?.GetInvocationList().Length ?? 0) + (CardRemoved?.GetInvocationList().Length ?? 0) + (MonitorException?.GetInvocationList().Length ?? 0) +
+            (Initialized?.GetInvocationList().Length ?? 0);
+
+        // Kept so the interface is complete; the adapter does not use it.
+        public void TouchUnused() => StatusChanged?.Invoke(this, null!);
 
         public IntPtr GetCurrentStateValue(int index) => throw new NotSupportedException();
         public SCRState GetCurrentState(int index) => throw new NotSupportedException();

@@ -45,7 +45,7 @@ Then run `./thaiid-diagnose` or `thaiid-diagnose.exe`. The Linux binary still ne
 | Option | Meaning |
 |---|---|
 | `--mode public` | Default. Reads what is printed on the card. |
-| `--mode private` | Also probes the private areas for status and length. The tool lists them before reading. Chip data is not read yet. |
+| `--mode private` | Also probes the private areas for status and length. The tool lists them before reading. Chip data is not read: see below. |
 | `--reader NAME` | Use this reader, by its full name or as the report prints it. Default: first reader holding a card. |
 | `--json` | One JSON document on stdout, with the notice on stderr. |
 
@@ -103,7 +103,13 @@ card, and only the conclusion should be sent back, never the value.
 | Does the next command work after leaving such bytes on the card? | Yes: the next field's status |
 | Does a card ask `6C 12` for issue and expiry? The guard refuses that read, so the field fails. | Yes: `verdict=OutsideDeclaredRange` |
 | Do warning status words (`62 xx`, `63 xx`) come with useful data? They count as failures today. | Partly: status word and length, not the data |
-| Do ADM and NHSO exist across generations, and what answers if not? Is the 7 + 16 byte Laser reading right? | Status and length, in private mode |
+| Do ADM and NHSO exist across generations, and what answers if not? | Yes: `AppletUnavailable` and the status word, in private mode |
+| Does `80 00 00 00 07` answer 7 bytes and `61 10`, then 16 bytes? Other shapes keep the bytes and give no value. | Yes: the trace of `AppletData` and `GetResponse`, `received=` and `AppletDataShape` |
+| Does a card ask `6C 17` for that command? The guard refuses the resend, so the field fails. | Yes: `sw=6C17` and `FollowUpRejected` |
+| Is the value in that answer the Laser ID, 12 letters or digits with 4 NUL? | Partly: `AppletDataShape` shows the shape fits, the meaning needs a separate approved test |
+| What does SELECT with no AID (`00 A4 04 00`) choose, and is it safe to follow with `80 CA 9F 7F`? Chip data stays out until a separate approved test answers this. | No: the guard refuses both in every mode |
+| Do `CardInserted` and `CardRemoved` arrive for every insert and removal on a real reader, again and again? Issue #16 reports a card read only once. Its cause is not known, and the monitor tests do not show it is gone. | No: the tool does not use `ThaiIdCardMonitor`, so this needs a separate run |
+| Does the real monitor report a card already in the reader at the start, and what does unplugging a reader raise? | No: same |
 | Are real reader names and the serial removal right? | Yes: check the `reader:` line against the real name |
 | Are the retry delays (100, 300, 900 ms) enough? | Partly: `Retry` events |
 

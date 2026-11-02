@@ -418,13 +418,30 @@ namespace ThaiNationalIDCard.Workflow
             return Finish(field, data, issues, validation, status, flags, CardFailureKind.None);
         }
 
-        /// <summary>The answer length is not known, as the 7 + 16 byte reading of this command is unconfirmed.</summary>
+        /// <summary>
+        /// Takes what the assumed layout holds and no more, whatever the card offers: see ASSUMPTION(adm-layout) in
+        /// <see cref="AdmProfile"/>. Any other shape only marks the field, and the bytes stay for whoever can read a real trace.
+        /// </summary>
         private CardFieldResult ReadAppletData(CardField field)
         {
             _token.ThrowIfCancellationRequested();
-            ApduResponse response = _exchange.Exchange(MoiCardCommands.AppletData(), CurrentP2);
-            FieldIssue issues = response.IsSuccess && response.Data.Length > 0 ? FieldIssue.None : FieldIssue.BadStatus;
-            return Finish(field, response.Data, issues, ValidationFailures.None, response.StatusWord, response.Flags, CardFailureKind.None);
+            ApduResponse response = _exchange.Exchange(MoiCardCommands.AppletData(), CurrentP2, maxData: AdmProfile.AppletDataLength);
+            ReadOutcomeKind outcome = ExchangeOutcome.OfRead(response, AdmProfile.AppletDataLength);
+            if (outcome == ReadOutcomeKind.Failed)
+            {
+                FieldIssue failed = response.IsSuccess ? FieldIssue.Truncated : FieldIssue.BadStatus;
+                return Finish(field, response.Data, failed, ValidationFailures.None, response.StatusWord, response.Flags, CardFailureKind.None);
+            }
+
+            FieldIssue issues = outcome == ReadOutcomeKind.Truncated ? FieldIssue.Truncated
+                : outcome == ReadOutcomeKind.CompleteMoreOffered ? FieldIssue.MoreOffered : FieldIssue.None;
+            ValidationFailures validation = FieldValidators.Check(field.Check, response.Data);
+            if ((response.Flags & ExchangeNotes.ExcessDropped) != 0)
+            {
+                validation |= ValidationFailures.AppletDataShape;
+            }
+
+            return Finish(field, response.Data, issues, validation, response.StatusWord, response.Flags, CardFailureKind.None);
         }
 
         /// <summary>Validators have run by now, so this is the point where bytes go when the request does not keep them.</summary>

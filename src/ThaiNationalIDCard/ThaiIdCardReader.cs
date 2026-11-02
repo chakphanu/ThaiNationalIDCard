@@ -66,22 +66,16 @@ namespace ThaiNationalIDCard
             return Task.Run(() => ReadFirstReadable(snapshot, cancellationToken), cancellationToken);
         }
 
-        /// <summary>
-        /// Private mode is refused here, before anything touches the card. The workflow can read those areas, but no public
-        /// model exists yet to return them in, and reading sensitive data just to drop it would be worse than saying no.
-        /// </summary>
+        /// <summary>An undefined mode is refused here, before anything touches the card, and never read as either mode.</summary>
         private static ReadOptions Snapshot(ReadOptions? options)
         {
             ReadOptions source = options ?? new ReadOptions();
-            switch (source.Mode)
+            if (source.Mode != CardReadMode.Public && source.Mode != CardReadMode.PublicAndPrivate)
             {
-                case CardReadMode.Public:
-                    return new ReadOptions { Mode = source.Mode, IncludePhoto = source.IncludePhoto, PhotoProgress = source.PhotoProgress };
-                case CardReadMode.PublicAndPrivate:
-                    throw new NotSupportedException("CardReadMode.PublicAndPrivate is not available yet in this preview. Nothing was read.");
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(options), "The read mode is not a defined value.");
+                throw new ArgumentOutOfRangeException(nameof(options), "The read mode is not a defined value.");
             }
+
+            return new ReadOptions { Mode = source.Mode, IncludePhoto = source.IncludePhoto, PhotoProgress = source.PhotoProgress };
         }
 
         /// <summary>A failure of the card in this reader, as opposed to one that would stop any further read too.</summary>
@@ -159,6 +153,7 @@ namespace ThaiNationalIDCard
                     IssueExpire = Raw(result, CardFieldId.IssueExpire),
                     Issuer = Raw(result, CardFieldId.Issuer),
                     Photo = Raw(result, CardFieldId.Photo),
+                    Private = options.Mode == CardReadMode.Public ? null : result.Fields.ToDictionary(f => f.Info.Id, f => new RawCardField(f.Data, f.Info.Quality)),
                 };
 
                 return CardDataParser.Parse(fields, result.Diagnostics);

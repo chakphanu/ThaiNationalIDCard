@@ -291,8 +291,38 @@ namespace ThaiNationalIDCard.Tests
                 if (scenario.Mode == CardReadMode.Public)
                 {
                     Assert.DoesNotContain(offsets, o => (o >= 0x0177 && o <= 0x0178) || o < 4 || (o >= 0x00E2 && o <= 0x00F5) || (o >= 0x1619 && o <= 0x1626));
+                    Assert.Empty(scenario.Card.AnsweredOffsets(SimulatedCard.NhsoAidHex));
+                    Assert.Empty(scenario.Card.AnsweredOffsets(SimulatedCard.AdmAidHex));
                 }
             }
+        }
+
+        [Fact]
+        public void Forbidden_commands_never_reach_the_card_in_any_scenario_or_mode()
+        {
+            int privateReads = 0;
+            for (int seed = 0; seed < Runs; seed++)
+            {
+                Scenario scenario = Build(seed);
+
+                Run(scenario, new DelaySpy(scenario.Card));
+
+                foreach (SimExchange exchange in scenario.Card.Log)
+                {
+                    byte[] c = exchange.Command;
+                    string hex = ApduText.Hex(c);
+                    bool pinOrFingerprint = (c[0] == 0x80 && (c[1] == 0x20 || c[1] == 0xB4)) || (c[0] == 0xB0 && c[1] == 0x34);
+                    bool write = c[1] == 0xD0 || c[1] == 0xD2 || c[1] == 0xD6 || c[1] == 0xDA || c[1] == 0xDC || c[1] == 0xE2;
+                    bool chipData = (c[0] == 0x80 && c[1] == 0xCA) || (Flow.IsSelect(c) && c.Length <= 5);
+
+                    Assert.False(pinOrFingerprint || write || chipData, "seed " + seed + ": " + hex);
+                }
+
+                privateReads += scenario.Mode == CardReadMode.PublicAndPrivate ? 1 : 0;
+            }
+
+            // Control: the scenarios do run both modes.
+            Assert.True(privateReads > 100 && privateReads < Runs - 100, "private reads " + privateReads);
         }
 
         [Fact]

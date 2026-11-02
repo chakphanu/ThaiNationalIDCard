@@ -320,6 +320,39 @@ namespace ThaiNationalIDCard.Tests
             Assert.NotEqual(CommandVerdict.Allowed, Pub.Evaluate(admCommand, AdmProfile.Instance, false));
         }
 
+        // What Advanced-Logic ThaiSmartCard.java sends for chip data, with the Le a 6C xx could ask for. The SELECT has no AID, so
+        // what it chooses cannot be bounded from here, and neither mode may send any of it.
+        [Theory]
+        [InlineData("00a40400")]
+        [InlineData("00a4040000")]
+        [InlineData("00a404002d")]
+        [InlineData("80ca9f7f")]
+        [InlineData("80ca9f7f00")]
+        [InlineData("80ca9f7f2d")]
+        public void Chip_data_commands_are_refused_in_every_mode_and_state(string hex)
+        {
+            byte[] command = ApduText.Bytes(hex);
+            CardProfile?[] selections = { null, MoiProfile.Public, MoiProfile.PublicAndPrivate, NhsoProfile.Instance, AdmProfile.Instance };
+
+            foreach (CommandPolicy policy in new[] { Pub, Priv })
+            {
+                foreach (CardProfile? selected in selections)
+                {
+                    Assert.NotEqual(CommandVerdict.Allowed, policy.Evaluate(command, selected, getResponsePending: true));
+                    Assert.Null(policy.FindSelectTarget(command));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("8000000000")]
+        [InlineData("80000000")]
+        [InlineData("8000000017")]
+        public void The_adm_data_command_has_one_exact_form(string hex)
+        {
+            Assert.NotEqual(CommandVerdict.Allowed, Priv.Evaluate(ApduText.Bytes(hex), AdmProfile.Instance, false));
+        }
+
         [Fact]
         public void Public_policy_ignores_a_selected_profile_it_does_not_hold()
         {

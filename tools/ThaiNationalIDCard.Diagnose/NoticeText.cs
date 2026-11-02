@@ -18,8 +18,8 @@ namespace ThaiNationalIDCard.Diagnose
                 yield return "Private mode also reads these areas, whose meaning is unconfirmed:";
                 yield return "  MOI applet offsets " + Ranges(MoiProfile.PublicAndPrivate.Fields.Where(f => f.IsPrivate));
                 yield return "  NHSO applet offsets " + Ranges(NhsoProfile.Instance.Fields);
-                yield return "  ADM applet data command";
-                yield return "Their bytes are checked for status and length only, then dropped. Chip data is not read.";
+                yield return "  ADM applet data command (public code suggests the answer holds the Laser ID)";
+                yield return "Their bytes are checked for status, length and shape only, then dropped. Chip data is not read.";
             }
         }
 

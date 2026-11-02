@@ -11,8 +11,8 @@ namespace ThaiNationalIDCard
         Public = 0,
 
         /// <summary>
-        /// Also the private areas. Not available yet in this preview: <see cref="ThaiIdCardReader"/> refuses this mode with
-        /// <see cref="NotSupportedException"/> before it touches the card, since no model exists to return these fields.
+        /// Also the private areas, given in <see cref="ThaiIdCardData.Private"/>. The caller is responsible for the holder's
+        /// consent and for the law that applies. No mode reads PIN, fingerprint or chip data, or writes to the card.
         /// </summary>
         PublicAndPrivate,
     }
@@ -101,6 +101,9 @@ namespace ThaiNationalIDCard
 
         /// <summary>Walking the JPEG markers did not reach an end of image.</summary>
         JpegEnd = 2048,
+
+        /// <summary>The ADM applet answer does not have the shape public code suggests. That shape is itself unconfirmed.</summary>
+        AppletDataShape = 4096,
     }
 
     /// <summary>

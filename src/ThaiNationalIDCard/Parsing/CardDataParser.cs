@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using ThaiNationalIDCard.Card;
 
@@ -32,6 +33,9 @@ namespace ThaiNationalIDCard.Parsing
         public RawCardField Issuer { get; set; }
 
         public RawCardField Photo { get; set; }
+
+        /// <summary>Every range of a private read by its id. Null in public mode. A field left out counts as not read.</summary>
+        public IReadOnlyDictionary<CardFieldId, RawCardField>? Private { get; set; }
     }
 
     /// <summary>
@@ -103,7 +107,44 @@ namespace ThaiNationalIDCard.Parsing
                 photoQuality);
 
             return new ThaiIdCardData(citizenId, thaiName, englishName, birthDate, sex, sexRaw, address, issueDate, expiryDate,
-                issuer, photo, photoFailure, quality, diagnostics);
+                issuer, photo, photoFailure, quality, diagnostics, fields.Private == null ? null : ParsePrivate(fields.Private));
+        }
+
+        /// <summary>
+        /// Everything stays raw except the value cut from the ADM answer, since nobody confirmed what the rest means. Chip data is
+        /// not read in any mode, for the reason given at CommandPolicy.PublicAndPrivate.
+        /// </summary>
+        private static ThaiIdCardPrivateData ParsePrivate(IReadOnlyDictionary<CardFieldId, RawCardField> fields)
+        {
+            RawCardField Field(CardFieldId id) => fields.TryGetValue(id, out RawCardField field) ? field : default;
+            CardRawValue Raw(CardFieldId id) => ToRawValue(Field(id));
+
+            (string? laserId, FieldQuality laserQuality) = ParseLaser(Field(CardFieldId.AdmAppletData));
+
+            var nhso = new ThaiIdCardNhsoData(
+                Raw(CardFieldId.NhsoRaw0004), Raw(CardFieldId.NhsoRaw0040), Raw(CardFieldId.NhsoRaw00A4), Raw(CardFieldId.NhsoRaw00F4),
+                Raw(CardFieldId.NhsoRaw0144), Raw(CardFieldId.NhsoRaw0145), Raw(CardFieldId.NhsoRaw014D), Raw(CardFieldId.NhsoRaw0155),
+                Raw(CardFieldId.NhsoRaw015D));
+
+            return new ThaiIdCardPrivateData(laserId, laserQuality, Raw(CardFieldId.AdmAppletData), nhso, Raw(CardFieldId.MoiRaw0000),
+                Raw(CardFieldId.MoiRaw00E2), Raw(CardFieldId.MoiRaw0177), Raw(CardFieldId.MoiRaw1619));
+        }
+
+        /// <summary>Bytes of a read with no usable result are not handed out, even what came before the failure.</summary>
+        private static CardRawValue ToRawValue(RawCardField field) =>
+            Usable(field) ? new CardRawValue(field.Data, field.Quality) : new CardRawValue(null, WithoutData(field));
+
+        /// <summary>See ASSUMPTION(adm-layout) and ASSUMPTION(laser-format) in <see cref="AdmProfile"/>.</summary>
+        private static (string? Value, FieldQuality Quality) ParseLaser(RawCardField field)
+        {
+            if (!Usable(field))
+            {
+                return (null, WithoutData(field));
+            }
+
+            byte[] data = field.Data!;
+            bool good = field.Quality == FieldQuality.Ok && FieldValidators.Check(FieldCheck.AdmAppletData, data) == ValidationFailures.None;
+            return (FieldValidators.AdmSlotText(data), good ? FieldQuality.Ok : FieldQuality.Suspect);
         }
 
         private static bool Usable(RawCardField field) =>
