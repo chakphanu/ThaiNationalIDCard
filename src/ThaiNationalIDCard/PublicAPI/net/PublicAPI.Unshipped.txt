@@ -1,0 +1,2 @@
+#nullable enable
+ThaiNationalIDCard.ThaiCardDate.ToDateOnly() -> System.DateOnly?

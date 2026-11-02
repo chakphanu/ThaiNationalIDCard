@@ -44,7 +44,7 @@ namespace ThaiNationalIDCard.Protocol
             }
 
             // A stopped exchange also ends in 61 xx. Its data is empty today, and the flags keep that from mattering.
-            bool stopped = (response.Flags & (ExchangeFlags.RoundLimitReached | ExchangeFlags.FollowUpRejected)) != 0;
+            bool stopped = (response.Flags & (ExchangeNotes.RoundLimitReached | ExchangeNotes.FollowUpRejected)) != 0;
             return response.Sw1 == 0x61 && !stopped && length == requestedLength
                 ? ReadOutcomeKind.CompleteMoreOffered
                 : ReadOutcomeKind.Failed;

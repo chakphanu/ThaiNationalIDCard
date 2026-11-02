@@ -130,7 +130,7 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(new[] { "80b0000402000d", "00c000000d" }, card.ReceivedHex.Skip(1));
             Assert.Equal(0x9000, response.StatusWord);
             Assert.Equal(Image(card, SyntheticImage.CitizenId, 13), response.Data);
-            Assert.Equal(ExchangeFlags.None, response.Flags);
+            Assert.Equal(ExchangeNotes.None, response.Flags);
         }
 
         [Fact]
@@ -187,7 +187,7 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(1 + 1 + ApduExchange.MaxGetResponseRounds, card.TransmitCount);
             Assert.Equal(0x6101, response.StatusWord);
             Assert.Empty(response.Data);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.RoundLimitReached));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.RoundLimitReached));
         }
 
         // ---- 6C xx ----
@@ -203,8 +203,8 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(new[] { "80b0000402000d", "80b0000402000c" }, card.ReceivedHex.Skip(1));
             Assert.True(response.IsSuccess);
             Assert.Equal(Image(card, SyntheticImage.CitizenId, 12), response.Data);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ResentAfterWrongLength));
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ShorterThanRequested));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ResentAfterWrongLength));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ShorterThanRequested));
         }
 
         [Fact]
@@ -218,7 +218,7 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(new[] { "80b0017b020010", "80b0017b020020" }, card.ReceivedHex.Skip(1));
             Assert.Equal(Image(card, SyntheticImage.Photo, 0x10), response.Data);
             Assert.True(response.IsSuccess);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ExcessDropped));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ExcessDropped));
         }
 
         [Fact]
@@ -231,7 +231,7 @@ namespace ThaiNationalIDCard.Tests
 
             Assert.Equal(new[] { "80b0017b0200ff", "80b0017b020000" }, card.ReceivedHex.Skip(1));
             Assert.Equal(Image(card, SyntheticImage.Photo, 0xFF), response.Data);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ExcessDropped));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ExcessDropped));
         }
 
         [Theory]
@@ -249,7 +249,7 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(new[] { ApduText.Hex(ApduText.Read(offset, le)) }, card.ReceivedHex.Skip(1));
             Assert.Equal(0x6C00 | exact, response.StatusWord);
             Assert.Empty(response.Data);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.FollowUpRejected));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.FollowUpRejected));
             Assert.Empty(card.Answered);
             Assert.Equal(CommandVerdict.OutsideDeclaredRange, exchange.Trace.Last().Verdict);
         }
@@ -265,7 +265,7 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(new[] { "80b0000402000d", "80b0000402000c" }, card.ReceivedHex.Skip(1));
             Assert.Equal(0x6C0B, response.StatusWord);
             Assert.Empty(response.Data);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.WrongLengthRepeated));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.WrongLengthRepeated));
         }
 
         [Fact]
@@ -353,7 +353,7 @@ namespace ThaiNationalIDCard.Tests
 
             Assert.True(response.IsSuccess);
             Assert.Empty(response.Data);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ShorterThanRequested));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ShorterThanRequested));
         }
 
         [Fact]
@@ -380,7 +380,7 @@ namespace ThaiNationalIDCard.Tests
 
             Assert.Equal(Image(card, SyntheticImage.IssueExpire, 0x10), response.Data);
             Assert.True(response.IsSuccess);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ExcessDropped));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ExcessDropped));
             Assert.Equal(0x12, exchange.Trace.Last().ReceivedLength);
         }
 
@@ -395,7 +395,7 @@ namespace ThaiNationalIDCard.Tests
             Assert.Equal(new[] { "80b00167020010", "00c0000010" }, card.ReceivedHex.Skip(1));
             Assert.Equal(Image(card, SyntheticImage.IssueExpire, 0x10), response.Data);
             Assert.Equal(0x6102, response.StatusWord);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ExcessDropped));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ExcessDropped));
             Assert.DoesNotContain(SyntheticImage.Raw0177, card.AnsweredOffsets());
         }
 
@@ -573,7 +573,7 @@ namespace ThaiNationalIDCard.Tests
             ApduResponse response = exchange.Exchange(Cid, 0x02);
 
             Assert.Equal(0x610D, response.StatusWord);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.FollowUpRejected));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.FollowUpRejected));
             Assert.DoesNotContain(card.ReceivedHex, h => h.StartsWith("00c0", StringComparison.Ordinal));
         }
 

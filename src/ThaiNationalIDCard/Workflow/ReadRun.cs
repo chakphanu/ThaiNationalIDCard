@@ -60,6 +60,8 @@ namespace ThaiNationalIDCard.Workflow
             string reader = ReaderSelector.Select(statuses, _request.ReaderName);
             _readerDisplayName = ReaderNames.RemoveSerial(reader);
 
+            using IDisposable? hold = _request.AcquireReader?.Invoke(reader, _token);
+
             int retriesUsed = 0;
             try
             {
@@ -206,7 +208,7 @@ namespace ThaiNationalIDCard.Workflow
             ApduResponse select = Select(_moi);
             if (!SelectAccepted(select))
             {
-                throw new UnsupportedCardException(select.StatusWord);
+                throw new UnsupportedCardException(statusWord: select.StatusWord);
             }
 
             foreach (CardField field in _moi.Fields.Where(f => !f.IsPrivate))
@@ -262,7 +264,7 @@ namespace ThaiNationalIDCard.Workflow
             bool checksumRetried = false;
             bool plainRetried = false;
             byte[]? digits = null;
-            ExchangeFlags heldFlags = ExchangeFlags.None;
+            ExchangeNotes heldFlags = ExchangeNotes.None;
             int heldStatus = NoStatus;
 
             while (true)
@@ -337,7 +339,7 @@ namespace ThaiNationalIDCard.Workflow
 
         private void LockP2() => _exchange.AddEvent(TraceEntry.ForEvent(TraceEvent.P2Locked, CurrentP2));
 
-        private CardFieldResult FinishSuspectCid(CardField field, byte[] digits, int status, ExchangeFlags flags)
+        private CardFieldResult FinishSuspectCid(CardField field, byte[] digits, int status, ExchangeNotes flags)
         {
             LockP2();
             return Finish(field, digits, FieldIssue.ChecksumRetried, ValidationFailures.ChecksumMismatch, status, flags, CardFailureKind.None);
@@ -372,7 +374,7 @@ namespace ThaiNationalIDCard.Workflow
             int count = 0;
             int status = NoStatus;
             FieldIssue issues = FieldIssue.None;
-            ExchangeFlags flags = ExchangeFlags.None;
+            ExchangeNotes flags = ExchangeNotes.None;
 
             foreach (FieldRange chunk in MoiCardCommands.Chunks(field.Range))
             {
@@ -384,6 +386,11 @@ namespace ThaiNationalIDCard.Workflow
                 Array.Copy(response.Data, 0, buffer, count, response.Data.Length);
                 count += response.Data.Length;
                 Clear(response.Data);
+
+                if (field.Id == CardFieldId.Photo && count > 0)
+                {
+                    _request.PhotoProgress?.Invoke(count, field.Range.Length);
+                }
 
                 if (outcome == ReadOutcomeKind.CompleteMoreOffered)
                 {
@@ -422,7 +429,7 @@ namespace ThaiNationalIDCard.Workflow
 
         /// <summary>Validators have run by now, so this is the point where bytes go when the request does not keep them.</summary>
         private CardFieldResult Finish(CardField field, byte[] data, FieldIssue issues, ValidationFailures validation, int status,
-            ExchangeFlags flags, CardFailureKind failure)
+            ExchangeNotes flags, CardFailureKind failure)
         {
             int requested = field.Access == FieldAccess.Read ? field.Range.Length : TraceEntry.NoValue;
             FieldQuality quality = QualityOf(data.Length, issues, validation);
@@ -449,7 +456,7 @@ namespace ThaiNationalIDCard.Workflow
 
         private static FieldDiagnostics NotRead(CardField field, FieldIssue issues, CardFailureKind failure) =>
             new FieldDiagnostics(field.Id, FieldQuality.NotRead, issues, ValidationFailures.None, NoStatus,
-                field.Access == FieldAccess.Read ? field.Range.Length : TraceEntry.NoValue, 0, ExchangeFlags.None, failure);
+                field.Access == FieldAccess.Read ? field.Range.Length : TraceEntry.NoValue, 0, ExchangeNotes.None, failure);
 
         // ---- private stage ----
 

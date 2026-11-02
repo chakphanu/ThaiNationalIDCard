@@ -13,6 +13,12 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);CA1001;CA1305;CA1707;CA1822;CA1824;CA1852;CA1859;CA2200</WarningsNotAsErrors>
   </PropertyGroup>
 
+  <!-- The old form used the removed 2.x API. Step 11 rewrites this sample, so it stays out of the build until then. -->
+  <ItemGroup>
+    <Compile Remove="Program.cs;frmMain.cs;frmMain.Designer.cs" />
+    <EmbeddedResource Remove="frmMain.resx" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\ThaiNationalIDCard\ThaiNationalIDCard.csproj" />
   </ItemGroup>

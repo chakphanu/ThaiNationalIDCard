@@ -41,7 +41,7 @@ namespace ThaiNationalIDCard.Protocol
         /// For SELECT, Data is always empty and the status is the one of SELECT itself, because the bytes after
         /// 61 xx are drained and discarded unread and the drain result decides nothing.
         /// Throws <see cref="CommandRejectedException"/> when the guard refuses the command itself. A refused
-        /// follow-up comes back as a status with <see cref="ExchangeFlags.FollowUpRejected"/>, because the card
+        /// follow-up comes back as a status with <see cref="ExchangeNotes.FollowUpRejected"/>, because the card
         /// asked for it, not the caller. With <paramref name="drainSelectResponse"/> false, a SELECT answering
         /// 61 xx stops there and sends no GET RESPONSE.
         /// </summary>
@@ -66,7 +66,7 @@ namespace ThaiNationalIDCard.Protocol
             byte firstSw2 = 0;
             byte lastSw1 = 0;
             byte lastSw2 = 0;
-            ExchangeFlags flags = ExchangeFlags.None;
+            ExchangeNotes flags = ExchangeNotes.None;
 
             while (true)
             {
@@ -77,26 +77,26 @@ namespace ThaiNationalIDCard.Protocol
                 }
                 catch (CommandRejectedException ex)
                 {
-                    AddTrace(current, round, getResponseP2, null, TraceEntry.NoValue, ExchangeFlags.None, ex.Verdict, CardFailureKind.None);
+                    AddTrace(current, round, getResponseP2, null, TraceEntry.NoValue, ExchangeNotes.None, ex.Verdict, CardFailureKind.None);
                     if (ReferenceEquals(current, command))
                     {
                         throw;
                     }
 
-                    flags |= ExchangeFlags.FollowUpRejected;
+                    flags |= ExchangeNotes.FollowUpRejected;
                     return discard
                         ? Finish(Array.Empty<byte>(), firstSw1, firstSw2, flags)
                         : Finish(Array.Empty<byte>(), lastSw1, lastSw2, flags);
                 }
                 catch (ThaiIdCardException ex)
                 {
-                    AddTrace(current, round, getResponseP2, null, TraceEntry.NoValue, ExchangeFlags.None, CommandVerdict.Allowed, ex.Failure);
+                    AddTrace(current, round, getResponseP2, null, TraceEntry.NoValue, ExchangeNotes.None, CommandVerdict.Allowed, ex.Failure);
                     throw;
                 }
 
                 if (response.Length < 2)
                 {
-                    AddTrace(current, round, getResponseP2, null, TraceEntry.NoValue, ExchangeFlags.None, CommandVerdict.Allowed, CardFailureKind.MalformedResponse);
+                    AddTrace(current, round, getResponseP2, null, TraceEntry.NoValue, ExchangeNotes.None, CommandVerdict.Allowed, CardFailureKind.MalformedResponse);
                     throw new CardCommunicationException(CardFailureKind.MalformedResponse);
                 }
 
@@ -110,7 +110,7 @@ namespace ThaiNationalIDCard.Protocol
                 }
 
                 bool success = lastSw1 == Sw1Success && lastSw2 == 0x00;
-                ExchangeFlags stepFlags = ExchangeFlags.None;
+                ExchangeNotes stepFlags = ExchangeNotes.None;
 
                 if ((success || lastSw1 == Sw1ResponsePending) && !discard)
                 {
@@ -119,7 +119,7 @@ namespace ThaiNationalIDCard.Protocol
                     count += take;
                     if (take < bodyLength)
                     {
-                        stepFlags |= ExchangeFlags.ExcessDropped;
+                        stepFlags |= ExchangeNotes.ExcessDropped;
                     }
                 }
 
@@ -137,7 +137,7 @@ namespace ThaiNationalIDCard.Protocol
                     if (wanted == 0)
                     {
                         // All asked bytes are here and the card offers more. It stays on the card.
-                        stepFlags |= ExchangeFlags.ExcessDropped;
+                        stepFlags |= ExchangeNotes.ExcessDropped;
                         flags |= stepFlags;
                         AddTrace(current, round, getResponseP2, bodyLength, (lastSw1 << 8) | lastSw2, stepFlags, CommandVerdict.Allowed, CardFailureKind.None);
                         return Finish(Slice(data, count), lastSw1, lastSw2, flags);
@@ -145,7 +145,7 @@ namespace ThaiNationalIDCard.Protocol
 
                     if (getResponseRounds >= MaxGetResponseRounds)
                     {
-                        stepFlags |= ExchangeFlags.RoundLimitReached;
+                        stepFlags |= ExchangeNotes.RoundLimitReached;
                         flags |= stepFlags;
                         AddTrace(current, round, getResponseP2, bodyLength, (lastSw1 << 8) | lastSw2, stepFlags, CommandVerdict.Allowed, CardFailureKind.None);
                         return discard
@@ -155,7 +155,7 @@ namespace ThaiNationalIDCard.Protocol
 
                     if (available > wanted)
                     {
-                        stepFlags |= ExchangeFlags.ExcessDropped;
+                        stepFlags |= ExchangeNotes.ExcessDropped;
                     }
 
                     flags |= stepFlags;
@@ -172,7 +172,7 @@ namespace ThaiNationalIDCard.Protocol
                     if (corrected != null)
                     {
                         resent = true;
-                        stepFlags |= ExchangeFlags.ResentAfterWrongLength;
+                        stepFlags |= ExchangeNotes.ResentAfterWrongLength;
                         flags |= stepFlags;
                         AddTrace(current, round, getResponseP2, bodyLength, (lastSw1 << 8) | lastSw2, stepFlags, CommandVerdict.Allowed, CardFailureKind.None);
                         current = corrected;
@@ -182,13 +182,13 @@ namespace ThaiNationalIDCard.Protocol
 
                     if (resent)
                     {
-                        stepFlags |= ExchangeFlags.WrongLengthRepeated;
+                        stepFlags |= ExchangeNotes.WrongLengthRepeated;
                     }
                 }
 
                 if (success && kind == TraceCommandKind.Read && count < capacity)
                 {
-                    stepFlags |= ExchangeFlags.ShorterThanRequested;
+                    stepFlags |= ExchangeNotes.ShorterThanRequested;
                 }
 
                 flags |= stepFlags;
@@ -207,7 +207,7 @@ namespace ThaiNationalIDCard.Protocol
         /// <summary>Adds a workflow decision to the trace, in order with the commands.</summary>
         public void AddEvent(TraceEntry entry) => _trace.Add(entry);
 
-        private static ApduResponse Finish(byte[] data, byte sw1, byte sw2, ExchangeFlags flags) =>
+        private static ApduResponse Finish(byte[] data, byte sw1, byte sw2, ExchangeNotes flags) =>
             new ApduResponse(data, sw1, sw2, flags);
 
         private static byte[] Slice(byte[] data, int count)
@@ -297,7 +297,7 @@ namespace ThaiNationalIDCard.Protocol
             return corrected;
         }
 
-        private void AddTrace(byte[] command, int round, byte getResponseP2, int? receivedLength, int statusWord, ExchangeFlags flags,
+        private void AddTrace(byte[] command, int round, byte getResponseP2, int? receivedLength, int statusWord, ExchangeNotes flags,
             CommandVerdict verdict, CardFailureKind failure)
         {
             TraceCommandKind kind = Classify(command);

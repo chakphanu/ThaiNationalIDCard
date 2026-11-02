@@ -7,10 +7,10 @@
   <ItemGroup>
     <!-- Library -->
     <PackageVersion Include="PCSC" Version="7.0.1" />
-    <PackageVersion Include="PCSC.Iso7816" Version="7.0.1" />
     <!-- Needed (netstandard2.0 only) for TIS-620 decoding. -->
     <PackageVersion Include="System.Text.Encoding.CodePages" Version="10.0.14" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.403" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
 
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />

@@ -11,12 +11,14 @@ namespace ThaiNationalIDCard.Parsing
     /// </summary>
     internal static class FieldValidators
     {
+        // Layout of the person info range, as public code reads it.
+        public const int NameSlotLength = 100;
+        public const int BirthDateOffset = 200;
+        public const int DateLength = 8;
+        public const int SexOffset = 208;
+
         private const int CitizenIdLength = 13;
         private const int CitizenIdPayloadLength = 12;
-        private const int DateLength = 8;
-        private const int NameSlotLength = 100;
-        private const int BirthDateOffset = 200;
-        private const int SexOffset = 208;
         private const int NameSeparators = 3;
 
         // One real card in public code shows 8 parts. Other sources show other counts, so this only marks.
@@ -88,6 +90,38 @@ namespace ThaiNationalIDCard.Parsing
             }
 
             return (11 - (sum % 11)) % 10;
+        }
+
+        /// <summary>13 ASCII digits and a matching check digit, nothing more. It says nothing about who holds the number.</summary>
+        public static bool IsValidCitizenId(string? text)
+        {
+            byte[]? digits = ThirteenDigits(text);
+            return digits != null && digits[CitizenIdLength - 1] - (byte)'0' == CitizenIdCheckDigit(digits);
+        }
+
+        /// <summary>The first digit when the text is 13 ASCII digits, whatever the check digit says.</summary>
+        public static string? FirstDigitOfCitizenId(string? text) =>
+            ThirteenDigits(text) == null ? null : text!.Substring(0, 1);
+
+        private static byte[]? ThirteenDigits(string? text)
+        {
+            if (text == null || text.Length != CitizenIdLength)
+            {
+                return null;
+            }
+
+            var digits = new byte[CitizenIdLength];
+            for (int i = 0; i < CitizenIdLength; i++)
+            {
+                if (text[i] < '0' || text[i] > '9')
+                {
+                    return null;
+                }
+
+                digits[i] = (byte)text[i];
+            }
+
+            return digits;
         }
 
         private static ValidationFailures CheckCitizenId(byte[] data)
@@ -168,32 +202,22 @@ namespace ThaiNationalIDCard.Parsing
             return result;
         }
 
-        /// <summary>
-        /// A first look only: FF D8 at the start and an FF D9 anywhere after it. Step 7 walks the JPEG markers, and only
-        /// then does a failing photo get withheld. Here it is marked and kept like any other field.
-        /// </summary>
+        /// <summary>The same walk the parser uses, so what the trace tool reports is what a caller would get.</summary>
         private static ValidationFailures CheckJpeg(byte[] data)
         {
-            ValidationFailures result = ValidationFailures.None;
-
-            if (data.Length < 2 || data[0] != 0xFF || data[1] != 0xD8)
+            switch (JpegScanner.Scan(data).Status)
             {
-                result |= ValidationFailures.JpegStart;
+                case JpegScanStatus.NoStart:
+                    return ValidationFailures.JpegStart;
+                case JpegScanStatus.NoEnd:
+                    return ValidationFailures.JpegEnd;
+                default:
+                    return ValidationFailures.None;
             }
-
-            for (int i = 2; i + 1 < data.Length; i++)
-            {
-                if (data[i] == 0xFF && data[i + 1] == 0xD9)
-                {
-                    return result;
-                }
-            }
-
-            return result | ValidationFailures.JpegEnd;
         }
 
         /// <summary>NUL and space padding, ASCII and the assigned Thai range. Anything else suggests a wrong offset.</summary>
-        private static bool IsTis620(byte[] data, int offset, int length)
+        public static bool IsTis620(byte[] data, int offset, int length)
         {
             for (int i = offset; i < offset + length; i++)
             {

@@ -7,7 +7,7 @@ namespace ThaiNationalIDCard.Tests
         [Fact]
         public void LibraryTypeIsAvailable()
         {
-            Assert.Equal("ThaiNationalIDCard", typeof(ThaiIDCard).Namespace);
+            Assert.Equal("ThaiNationalIDCard", typeof(ThaiIdCardReader).Namespace);
         }
     }
 }

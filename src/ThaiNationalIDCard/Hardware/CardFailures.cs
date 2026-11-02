@@ -2,29 +2,6 @@ using System;
 
 namespace ThaiNationalIDCard.Hardware
 {
-    /// <summary>Transport level failure categories. The seam reports failures only through these.</summary>
-    internal enum CardFailureKind
-    {
-        None = 0,
-        ServiceUnavailable,
-        ReaderNotFound,
-        CardNotPresent,
-        CardRemoved,
-        CardReset,
-        SharingViolation,
-        Timeout,
-        NotConnected,
-        UnsupportedCard,
-        MalformedResponse,
-        Communication,
-
-        /// <summary>SELECT of the MOI applet was refused.</summary>
-        NoApplet,
-
-        /// <summary>The CID gate did not get a citizen ID with any allowed attempt.</summary>
-        UnknownReadBehaviour,
-    }
-
     /// <summary>Single place that turns a failure category into the library exception for it.</summary>
     internal static class CardFailures
     {

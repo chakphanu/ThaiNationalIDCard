@@ -34,34 +34,6 @@ namespace ThaiNationalIDCard.Card
         Adm,
     }
 
-    /// <summary>
-    /// Every field the library can ask for. Fields whose meaning public sources disagree on are named by position,
-    /// so no name here claims more than the evidence does.
-    /// </summary>
-    internal enum CardFieldId
-    {
-        CitizenId,
-        PersonInfo,
-        Address,
-        IssueExpire,
-        Issuer,
-        Photo,
-        MoiRaw0000,
-        MoiRaw00E2,
-        MoiRaw0177,
-        MoiRaw1619,
-        NhsoRaw0004,
-        NhsoRaw0040,
-        NhsoRaw00A4,
-        NhsoRaw00F4,
-        NhsoRaw0144,
-        NhsoRaw0145,
-        NhsoRaw014D,
-        NhsoRaw0155,
-        NhsoRaw015D,
-        AdmAppletData,
-    }
-
     /// <summary>Which validator a field gets. None means status and length only.</summary>
     internal enum FieldCheck
     {

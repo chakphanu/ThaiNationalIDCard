@@ -5,13 +5,6 @@
     <RootNamespace>ThaiNationalIDCard</RootNamespace>
     <AssemblyName>ThaiNationalIDCard</AssemblyName>
 
-    <!-- TODO(phase 2-4): legacy code predates nullable reference types. Remove this NoWarn once
-         the legacy files are annotated. Chosen over per-file '#nullable disable' to avoid touching sources. -->
-    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8606;CS8607;CS8608;CS8609;CS8610;CS8611;CS8612;CS8613;CS8614;CS8615;CS8616;CS8617;CS8618;CS8619;CS8620;CS8621;CS8622;CS8624;CS8625;CS8629;CS8631;CS8633;CS8634;CS8643;CS8644;CS8645;CS8653;CS8654;CS8655;CS8656;CS8667;CS8669;CS8670;CS8714;CS8762;CS8763;CS8764;CS8765;CS8766;CS8767</NoWarn>
-    <!-- TODO(phase 4): remove once public members of the legacy API are documented. -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <!-- TODO(phase 3-4): legacy analyzer findings stay visible as warnings but do not fail CI builds. Remove as they are fixed. -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);CA1001;CA1305;CA1707;CA1822;CA1824;CA1852;CA1859;CA2200</WarningsNotAsErrors>
     <!-- ThrowIfNull and ThrowIf do not exist on netstandard2.0, which this library also targets. -->
     <NoWarn>$(NoWarn);CA1510;CA1513</NoWarn>
   </PropertyGroup>
@@ -35,8 +28,8 @@
 
   <ItemGroup>
     <PackageReference Include="PCSC" />
-    <PackageReference Include="PCSC.Iso7816" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- TIS-620 decoding: CodePagesEncodingProvider is built into net8.0 and later, a package on netstandard2.0. -->
@@ -47,8 +40,19 @@
   <ItemGroup>
     <InternalsVisibleTo Include="ThaiNationalIDCard.Tests" />
     <InternalsVisibleTo Include="ThaiNationalIDCard.Diagnose.Tests" />
-    <!-- The trace tool ships before the public API of step 8 exists. -->
+    <!-- The trace tool needs diagnostics with field bytes cleared early, which the public reader does not offer. -->
     <InternalsVisibleTo Include="thaiid-diagnose" />
+  </ItemGroup>
+
+  <!-- Public API baseline. Nothing of v3 has shipped yet, so everything is still in the unshipped files. -->
+  <ItemGroup>
+    <AdditionalFiles Include="PublicAPI\PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI\PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
+  <!-- ThaiCardDate.ToDateOnly exists only where DateOnly does. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <AdditionalFiles Include="PublicAPI\net\PublicAPI.Unshipped.txt" />
   </ItemGroup>
 
   <ItemGroup>

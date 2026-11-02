@@ -177,7 +177,7 @@ namespace ThaiNationalIDCard.Diagnose
                 parts.Add("p2=" + Hex2(entry.GetResponseP2));
             }
 
-            if (entry.Flags != ExchangeFlags.None)
+            if (entry.Flags != ExchangeNotes.None)
             {
                 parts.Add("flags=" + Flags(entry.Flags));
             }

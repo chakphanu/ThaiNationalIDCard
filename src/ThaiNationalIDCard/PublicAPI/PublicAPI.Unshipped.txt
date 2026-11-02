@@ -1,0 +1,277 @@
+#nullable enable
+const ThaiNationalIDCard.TraceEntry.NoValue = -1 -> int
+override ThaiNationalIDCard.FieldDiagnostics.ToString() -> string!
+override ThaiNationalIDCard.PhotoReadProgress.ToString() -> string!
+override ThaiNationalIDCard.ReadDiagnostics.ToString() -> string!
+override ThaiNationalIDCard.ThaiCardDate.ToString() -> string!
+override ThaiNationalIDCard.ThaiIdCardAddress.ToString() -> string!
+override ThaiNationalIDCard.ThaiIdCardData.ToString() -> string!
+override ThaiNationalIDCard.ThaiIdCardName.ToString() -> string!
+override ThaiNationalIDCard.TraceEntry.ToString() -> string!
+ThaiNationalIDCard.CardCommunicationException
+ThaiNationalIDCard.CardCommunicationException.CardCommunicationException(ThaiNationalIDCard.CardFailureKind failure, System.Exception? innerException = null, int? statusWord = null) -> void
+ThaiNationalIDCard.CardCommunicationException.StatusWord.get -> int?
+ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.CardNotPresent = 3 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.CardRemoved = 4 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.CardReset = 5 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.Communication = 11 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.MalformedResponse = 10 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.NoApplet = 12 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.None = 0 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.NotConnected = 8 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.ReaderNotFound = 2 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.ServiceUnavailable = 1 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.SharingViolation = 6 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.Timeout = 7 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.UnknownReadBehaviour = 13 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFailureKind.UnsupportedCard = 9 -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.Address = 2 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.AdmAppletData = 19 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.CitizenId = 0 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.IssueExpire = 3 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.Issuer = 4 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.MoiRaw0000 = 6 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.MoiRaw00E2 = 7 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.MoiRaw0177 = 8 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.MoiRaw1619 = 9 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw0004 = 10 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw0040 = 11 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw00A4 = 12 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw00F4 = 13 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw0144 = 14 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw0145 = 15 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw014D = 16 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw0155 = 17 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.NhsoRaw015D = 18 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.PersonInfo = 1 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardFieldId.Photo = 5 -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.CardNotPresentException
+ThaiNationalIDCard.CardNotPresentException.CardNotPresentException(System.Exception? innerException = null) -> void
+ThaiNationalIDCard.CardReadMode
+ThaiNationalIDCard.CardReadMode.Public = 0 -> ThaiNationalIDCard.CardReadMode
+ThaiNationalIDCard.CardReadMode.PublicAndPrivate = 1 -> ThaiNationalIDCard.CardReadMode
+ThaiNationalIDCard.CardRemovedException
+ThaiNationalIDCard.CardRemovedException.CardRemovedException(System.Exception? innerException = null) -> void
+ThaiNationalIDCard.CardSex
+ThaiNationalIDCard.CardSex.Female = 2 -> ThaiNationalIDCard.CardSex
+ThaiNationalIDCard.CardSex.Male = 1 -> ThaiNationalIDCard.CardSex
+ThaiNationalIDCard.CardSex.Unknown = 0 -> ThaiNationalIDCard.CardSex
+ThaiNationalIDCard.CardTransportProtocol
+ThaiNationalIDCard.CardTransportProtocol.Raw = 2 -> ThaiNationalIDCard.CardTransportProtocol
+ThaiNationalIDCard.CardTransportProtocol.T0 = 0 -> ThaiNationalIDCard.CardTransportProtocol
+ThaiNationalIDCard.CardTransportProtocol.T1 = 1 -> ThaiNationalIDCard.CardTransportProtocol
+ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.Allowed = 0 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.AlwaysForbidden = 2 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.AppletNotAllowed = 4 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.Malformed = 1 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.NoAppletSelected = 5 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.NoPendingResponse = 7 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.NotAllowlisted = 3 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.CommandVerdict.OutsideDeclaredRange = 6 -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.ExchangeNotes.ExcessDropped = 1 -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.ExchangeNotes.FollowUpRejected = 4 -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.ExchangeNotes.None = 0 -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.ExchangeNotes.ResentAfterWrongLength = 8 -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.ExchangeNotes.RoundLimitReached = 2 -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.ExchangeNotes.ShorterThanRequested = 32 -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.ExchangeNotes.WrongLengthRepeated = 16 -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.FieldDiagnostics
+ThaiNationalIDCard.FieldDiagnostics.Failure.get -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.FieldDiagnostics.FieldDiagnostics() -> void
+ThaiNationalIDCard.FieldDiagnostics.Flags.get -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.FieldDiagnostics.Id.get -> ThaiNationalIDCard.CardFieldId
+ThaiNationalIDCard.FieldDiagnostics.Issues.get -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldDiagnostics.Quality.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.FieldDiagnostics.ReceivedLength.get -> int
+ThaiNationalIDCard.FieldDiagnostics.RequestedLength.get -> int
+ThaiNationalIDCard.FieldDiagnostics.StatusWord.get -> int
+ThaiNationalIDCard.FieldDiagnostics.Validation.get -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldIssue.AppletUnavailable = 16 -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldIssue.BadStatus = 4 -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldIssue.ChecksumRetried = 8 -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldIssue.MoreOffered = 1 -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldIssue.None = 0 -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldIssue.TransportFailed = 32 -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldIssue.Truncated = 2 -> ThaiNationalIDCard.FieldIssue
+ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.FieldQuality.Failed = 3 -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.FieldQuality.NotRead = 0 -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.FieldQuality.Ok = 1 -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.FieldQuality.Suspect = 2 -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.IThaiIdCardReader
+ThaiNationalIDCard.IThaiIdCardReader.GetReaderNames() -> System.Collections.Generic.IReadOnlyList<string!>!
+ThaiNationalIDCard.IThaiIdCardReader.ReadAsync(string! readerName, ThaiNationalIDCard.ReadOptions? options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<ThaiNationalIDCard.ThaiIdCardData!>!
+ThaiNationalIDCard.IThaiIdCardReader.ReadAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<ThaiNationalIDCard.ThaiIdCardData!>!
+ThaiNationalIDCard.PhotoFailureReason
+ThaiNationalIDCard.PhotoFailureReason.NoEndMarker = 3 -> ThaiNationalIDCard.PhotoFailureReason
+ThaiNationalIDCard.PhotoFailureReason.None = 0 -> ThaiNationalIDCard.PhotoFailureReason
+ThaiNationalIDCard.PhotoFailureReason.NoStartMarker = 2 -> ThaiNationalIDCard.PhotoFailureReason
+ThaiNationalIDCard.PhotoFailureReason.ReadFailed = 1 -> ThaiNationalIDCard.PhotoFailureReason
+ThaiNationalIDCard.PhotoReadProgress
+ThaiNationalIDCard.PhotoReadProgress.BytesRead.get -> int
+ThaiNationalIDCard.PhotoReadProgress.PhotoReadProgress() -> void
+ThaiNationalIDCard.PhotoReadProgress.PhotoReadProgress(int bytesRead, int totalBytes) -> void
+ThaiNationalIDCard.PhotoReadProgress.TotalBytes.get -> int
+ThaiNationalIDCard.ReadCanceledException
+ThaiNationalIDCard.ReadCanceledException.Diagnostics.get -> ThaiNationalIDCard.ReadDiagnostics!
+ThaiNationalIDCard.ReadDiagnostics
+ThaiNationalIDCard.ReadDiagnostics.AtrHex.get -> string!
+ThaiNationalIDCard.ReadDiagnostics.Failure.get -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.ReadDiagnostics.Fields.get -> System.Collections.Generic.IReadOnlyList<ThaiNationalIDCard.FieldDiagnostics>!
+ThaiNationalIDCard.ReadDiagnostics.Mode.get -> ThaiNationalIDCard.CardReadMode
+ThaiNationalIDCard.ReadDiagnostics.P2Used.get -> int?
+ThaiNationalIDCard.ReadDiagnostics.Protocol.get -> ThaiNationalIDCard.CardTransportProtocol?
+ThaiNationalIDCard.ReadDiagnostics.ReaderName.get -> string?
+ThaiNationalIDCard.ReadDiagnostics.Readers.get -> System.Collections.Generic.IReadOnlyList<ThaiNationalIDCard.ReaderDiagnostics>!
+ThaiNationalIDCard.ReadDiagnostics.Trace.get -> System.Collections.Generic.IReadOnlyList<ThaiNationalIDCard.TraceEntry>!
+ThaiNationalIDCard.ReaderCardState
+ThaiNationalIDCard.ReaderCardState.Empty = 1 -> ThaiNationalIDCard.ReaderCardState
+ThaiNationalIDCard.ReaderCardState.Mute = 3 -> ThaiNationalIDCard.ReaderCardState
+ThaiNationalIDCard.ReaderCardState.Present = 2 -> ThaiNationalIDCard.ReaderCardState
+ThaiNationalIDCard.ReaderCardState.Unavailable = 4 -> ThaiNationalIDCard.ReaderCardState
+ThaiNationalIDCard.ReaderCardState.Unknown = 0 -> ThaiNationalIDCard.ReaderCardState
+ThaiNationalIDCard.ReaderDiagnostics
+ThaiNationalIDCard.ReaderDiagnostics.DisplayName.get -> string!
+ThaiNationalIDCard.ReaderDiagnostics.ReaderDiagnostics() -> void
+ThaiNationalIDCard.ReaderDiagnostics.State.get -> ThaiNationalIDCard.ReaderCardState
+ThaiNationalIDCard.ReaderNotFoundException
+ThaiNationalIDCard.ReaderNotFoundException.ReaderNotFoundException(System.Exception? innerException = null) -> void
+ThaiNationalIDCard.ReadOptions
+ThaiNationalIDCard.ReadOptions.IncludePhoto.get -> bool
+ThaiNationalIDCard.ReadOptions.IncludePhoto.set -> void
+ThaiNationalIDCard.ReadOptions.Mode.get -> ThaiNationalIDCard.CardReadMode
+ThaiNationalIDCard.ReadOptions.Mode.set -> void
+ThaiNationalIDCard.ReadOptions.PhotoProgress.get -> System.IProgress<ThaiNationalIDCard.PhotoReadProgress>?
+ThaiNationalIDCard.ReadOptions.PhotoProgress.set -> void
+ThaiNationalIDCard.ReadOptions.ReadOptions() -> void
+ThaiNationalIDCard.SmartCardServiceUnavailableException
+ThaiNationalIDCard.SmartCardServiceUnavailableException.NativeLibraryMissing.get -> bool
+ThaiNationalIDCard.SmartCardServiceUnavailableException.SmartCardServiceUnavailableException(System.Exception? innerException = null) -> void
+ThaiNationalIDCard.ThaiCardDate
+ThaiNationalIDCard.ThaiCardDate.AgeReferenceDate.get -> System.DateTime?
+ThaiNationalIDCard.ThaiCardDate.Day.get -> int?
+ThaiNationalIDCard.ThaiCardDate.IsLifetime.get -> bool
+ThaiNationalIDCard.ThaiCardDate.Month.get -> int?
+ThaiNationalIDCard.ThaiCardDate.Raw.get -> string!
+ThaiNationalIDCard.ThaiCardDate.ThaiCardDate(string? raw = null) -> void
+ThaiNationalIDCard.ThaiCardDate.ToDateTime() -> System.DateTime?
+ThaiNationalIDCard.ThaiCardDate.Year.get -> int?
+ThaiNationalIDCard.ThaiIdCardAddress
+ThaiNationalIDCard.ThaiIdCardAddress.Amphoe.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.Full.get -> string!
+ThaiNationalIDCard.ThaiIdCardAddress.Khet.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.Khwaeng.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.Moo.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.Province.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.RawParts.get -> System.Collections.Generic.IReadOnlyList<string!>!
+ThaiNationalIDCard.ThaiIdCardAddress.Road.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.Soi.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.Tambon.get -> string?
+ThaiNationalIDCard.ThaiIdCardAddress.ThaiIdCardAddress(string? full = null, System.Collections.Generic.IEnumerable<string!>? rawParts = null, string? moo = null, string? trok = null, string? soi = null, string? road = null, string? tambon = null, string? khwaeng = null, string? amphoe = null, string? khet = null, string? province = null) -> void
+ThaiNationalIDCard.ThaiIdCardAddress.Trok.get -> string?
+ThaiNationalIDCard.ThaiIdCardData
+ThaiNationalIDCard.ThaiIdCardData.Address.get -> ThaiNationalIDCard.ThaiIdCardAddress!
+ThaiNationalIDCard.ThaiIdCardData.BirthDate.get -> ThaiNationalIDCard.ThaiCardDate!
+ThaiNationalIDCard.ThaiIdCardData.CitizenId.get -> string?
+ThaiNationalIDCard.ThaiIdCardData.Diagnostics.get -> ThaiNationalIDCard.ReadDiagnostics!
+ThaiNationalIDCard.ThaiIdCardData.EnglishName.get -> ThaiNationalIDCard.ThaiIdCardName!
+ThaiNationalIDCard.ThaiIdCardData.ExpiryDate.get -> ThaiNationalIDCard.ThaiCardDate!
+ThaiNationalIDCard.ThaiIdCardData.GetPhoto() -> byte[]?
+ThaiNationalIDCard.ThaiIdCardData.IssueDate.get -> ThaiNationalIDCard.ThaiCardDate!
+ThaiNationalIDCard.ThaiIdCardData.Issuer.get -> string?
+ThaiNationalIDCard.ThaiIdCardData.IsValidCitizenId.get -> bool
+ThaiNationalIDCard.ThaiIdCardData.PersonCategoryCode.get -> string?
+ThaiNationalIDCard.ThaiIdCardData.PhotoFailure.get -> ThaiNationalIDCard.PhotoFailureReason
+ThaiNationalIDCard.ThaiIdCardData.Quality.get -> ThaiNationalIDCard.ThaiIdCardQuality!
+ThaiNationalIDCard.ThaiIdCardData.Sex.get -> ThaiNationalIDCard.CardSex
+ThaiNationalIDCard.ThaiIdCardData.SexRaw.get -> byte?
+ThaiNationalIDCard.ThaiIdCardData.ThaiIdCardData(string? citizenId = null, ThaiNationalIDCard.ThaiIdCardName? thaiName = null, ThaiNationalIDCard.ThaiIdCardName? englishName = null, ThaiNationalIDCard.ThaiCardDate? birthDate = null, ThaiNationalIDCard.CardSex sex = ThaiNationalIDCard.CardSex.Unknown, byte? sexRaw = null, ThaiNationalIDCard.ThaiIdCardAddress? address = null, ThaiNationalIDCard.ThaiCardDate? issueDate = null, ThaiNationalIDCard.ThaiCardDate? expiryDate = null, string? issuer = null, byte[]? photo = null, ThaiNationalIDCard.PhotoFailureReason photoFailure = ThaiNationalIDCard.PhotoFailureReason.None, ThaiNationalIDCard.ThaiIdCardQuality? quality = null, ThaiNationalIDCard.ReadDiagnostics? diagnostics = null) -> void
+ThaiNationalIDCard.ThaiIdCardData.ThaiName.get -> ThaiNationalIDCard.ThaiIdCardName!
+ThaiNationalIDCard.ThaiIdCardException
+ThaiNationalIDCard.ThaiIdCardException.Diagnostics.get -> ThaiNationalIDCard.ReadDiagnostics?
+ThaiNationalIDCard.ThaiIdCardException.Failure.get -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.ThaiIdCardName
+ThaiNationalIDCard.ThaiIdCardName.FirstName.get -> string!
+ThaiNationalIDCard.ThaiIdCardName.LastName.get -> string!
+ThaiNationalIDCard.ThaiIdCardName.MiddleName.get -> string!
+ThaiNationalIDCard.ThaiIdCardName.Prefix.get -> string!
+ThaiNationalIDCard.ThaiIdCardName.Raw.get -> string!
+ThaiNationalIDCard.ThaiIdCardName.ThaiIdCardName(string? prefix = null, string? firstName = null, string? middleName = null, string? lastName = null, string? raw = null) -> void
+ThaiNationalIDCard.ThaiIdCardQuality
+ThaiNationalIDCard.ThaiIdCardQuality.Address.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.BirthDate.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.CitizenId.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.EnglishName.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.ExpiryDate.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.IssueDate.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.Issuer.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.Photo.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.Sex.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardQuality.ThaiIdCardQuality(ThaiNationalIDCard.FieldQuality citizenId = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality thaiName = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality englishName = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality birthDate = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality sex = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality address = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality issueDate = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality expiryDate = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality issuer = ThaiNationalIDCard.FieldQuality.NotRead, ThaiNationalIDCard.FieldQuality photo = ThaiNationalIDCard.FieldQuality.NotRead) -> void
+ThaiNationalIDCard.ThaiIdCardQuality.ThaiName.get -> ThaiNationalIDCard.FieldQuality
+ThaiNationalIDCard.ThaiIdCardReader
+ThaiNationalIDCard.ThaiIdCardReader.GetReaderNames() -> System.Collections.Generic.IReadOnlyList<string!>!
+ThaiNationalIDCard.ThaiIdCardReader.ReadAsync(string! readerName, ThaiNationalIDCard.ReadOptions? options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<ThaiNationalIDCard.ThaiIdCardData!>!
+ThaiNationalIDCard.ThaiIdCardReader.ReadAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<ThaiNationalIDCard.ThaiIdCardData!>!
+ThaiNationalIDCard.ThaiIdCardReader.ThaiIdCardReader() -> void
+ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceCommandKind.AppletData = 4 -> ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceCommandKind.Event = 5 -> ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceCommandKind.GetResponse = 3 -> ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceCommandKind.Other = 0 -> ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceCommandKind.Read = 2 -> ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceCommandKind.Select = 1 -> ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceEntry
+ThaiNationalIDCard.TraceEntry.Event.get -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEntry.Failure.get -> ThaiNationalIDCard.CardFailureKind
+ThaiNationalIDCard.TraceEntry.Flags.get -> ThaiNationalIDCard.ExchangeNotes
+ThaiNationalIDCard.TraceEntry.GetResponseP2.get -> int
+ThaiNationalIDCard.TraceEntry.Kind.get -> ThaiNationalIDCard.TraceCommandKind
+ThaiNationalIDCard.TraceEntry.Offset.get -> int
+ThaiNationalIDCard.TraceEntry.ReceivedLength.get -> int
+ThaiNationalIDCard.TraceEntry.RequestedLength.get -> int
+ThaiNationalIDCard.TraceEntry.Round.get -> int
+ThaiNationalIDCard.TraceEntry.StatusWord.get -> int
+ThaiNationalIDCard.TraceEntry.TraceEntry() -> void
+ThaiNationalIDCard.TraceEntry.Verdict.get -> ThaiNationalIDCard.CommandVerdict
+ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.AtrP2RuleUsed = 6 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.ChecksumRetry = 9 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.Connected = 1 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.EnteringAdm = 13 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.EnteringMoi = 11 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.EnteringNhso = 12 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.NoGetResponseRetry = 10 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.None = 0 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.P2Fallback = 8 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.P2Locked = 7 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.PrivateStageStopped = 14 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.Retry = 5 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.TransactionClosed = 3 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.TransactionCloseFailed = 4 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.TraceEvent.TransactionOpened = 2 -> ThaiNationalIDCard.TraceEvent
+ThaiNationalIDCard.UnknownReadBehaviourException
+ThaiNationalIDCard.UnknownReadBehaviourException.LastStatusWord.get -> int?
+ThaiNationalIDCard.UnknownReadBehaviourException.UnknownReadBehaviourException(int? lastStatusWord = null) -> void
+ThaiNationalIDCard.UnsupportedCardException
+ThaiNationalIDCard.UnsupportedCardException.StatusWord.get -> int?
+ThaiNationalIDCard.UnsupportedCardException.UnsupportedCardException(System.Exception? innerException = null, int? statusWord = null) -> void
+ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.AddressShape = 128 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.BirthDateNotDigits = 16 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.ChecksumMismatch = 2 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.EnglishNameShape = 8 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.ExpiryDateNotDigits = 512 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.IssueDateNotDigits = 256 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.JpegEnd = 2048 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.JpegStart = 1024 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.None = 0 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.NotThirteenDigits = 1 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.SexCode = 32 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.TextEncoding = 64 -> ThaiNationalIDCard.ValidationFailures
+ThaiNationalIDCard.ValidationFailures.ThaiNameShape = 4 -> ThaiNationalIDCard.ValidationFailures

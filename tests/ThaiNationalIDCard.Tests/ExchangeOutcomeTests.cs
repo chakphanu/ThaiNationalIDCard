@@ -75,7 +75,7 @@ namespace ThaiNationalIDCard.Tests
 
             ApduResponse response = Open(card).Exchange(ApduText.Read(SyntheticImage.IssueExpire, 0x10), 0x00);
 
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ExcessDropped));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ExcessDropped));
             Assert.Equal(ReadOutcomeKind.Complete, ExchangeOutcome.OfRead(response, 0x10));
         }
 
@@ -86,7 +86,7 @@ namespace ThaiNationalIDCard.Tests
 
             ApduResponse response = Open(card).Exchange(ApduText.Read(SyntheticImage.Photo, 0x10), 0x00);
 
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.ResentAfterWrongLength));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.ResentAfterWrongLength));
             Assert.Equal(ReadOutcomeKind.Complete, ExchangeOutcome.OfRead(response, 0x10));
         }
 
@@ -119,7 +119,7 @@ namespace ThaiNationalIDCard.Tests
             ApduResponse response = Open(card).Exchange(ApduText.Read(0x0004, 13), 0x00);
 
             Assert.Equal(0x6101, response.StatusWord);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.RoundLimitReached));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.RoundLimitReached));
             Assert.Equal(ReadOutcomeKind.Failed, ExchangeOutcome.OfRead(response, 13));
         }
 
@@ -131,7 +131,7 @@ namespace ThaiNationalIDCard.Tests
             ApduResponse response = Open(card).Exchange(ApduText.Read(SyntheticImage.IssueExpire, 0x10), 0x00);
 
             Assert.Equal(0x6C12, response.StatusWord);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.FollowUpRejected));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.FollowUpRejected));
             Assert.Equal(ReadOutcomeKind.Failed, ExchangeOutcome.OfRead(response, 0x10));
         }
 
@@ -144,7 +144,7 @@ namespace ThaiNationalIDCard.Tests
             ApduResponse response = Open(card).Exchange(ApduText.Read(0x0004, 13), 0x02);
 
             Assert.Equal(0x610D, response.StatusWord);
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.FollowUpRejected));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.FollowUpRejected));
             Assert.Equal(ReadOutcomeKind.Failed, ExchangeOutcome.OfRead(response, 13));
         }
 
@@ -155,7 +155,7 @@ namespace ThaiNationalIDCard.Tests
 
             ApduResponse response = Open(card).Exchange(ApduText.Read(0x0004, 13), 0x00);
 
-            Assert.True(response.Flags.HasFlag(ExchangeFlags.WrongLengthRepeated));
+            Assert.True(response.Flags.HasFlag(ExchangeNotes.WrongLengthRepeated));
             Assert.Equal(ReadOutcomeKind.Failed, ExchangeOutcome.OfRead(response, 13));
         }
 
@@ -200,8 +200,8 @@ namespace ThaiNationalIDCard.Tests
         [Fact]
         public void Flags_for_a_stopped_exchange_outrank_full_length_data()
         {
-            var limited = new ApduResponse(new byte[13], 0x61, 0x02, ExchangeFlags.RoundLimitReached);
-            var refused = new ApduResponse(new byte[13], 0x61, 0x02, ExchangeFlags.FollowUpRejected);
+            var limited = new ApduResponse(new byte[13], 0x61, 0x02, ExchangeNotes.RoundLimitReached);
+            var refused = new ApduResponse(new byte[13], 0x61, 0x02, ExchangeNotes.FollowUpRejected);
 
             Assert.Equal(ReadOutcomeKind.Failed, ExchangeOutcome.OfRead(limited, 13));
             Assert.Equal(ReadOutcomeKind.Failed, ExchangeOutcome.OfRead(refused, 13));

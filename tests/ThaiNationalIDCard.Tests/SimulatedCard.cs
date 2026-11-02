@@ -160,6 +160,9 @@ namespace ThaiNationalIDCard.Tests
 
         public int ConnectCalls { get; private set; }
 
+        /// <summary>The reader name of every call to Connect, in order.</summary>
+        public List<string> ConnectedReaders { get; } = new List<string>();
+
         public int DisconnectCalls { get; private set; }
 
         public int DisposeCalls { get; private set; }
@@ -198,6 +201,7 @@ namespace ThaiNationalIDCard.Tests
         public CardConnectionInfo Connect(string readerName)
         {
             ConnectCalls++;
+            ConnectedReaders.Add(readerName);
             CallLog.Add("connect");
             if (ConnectFailures.Count > 0)
             {
@@ -562,18 +566,21 @@ namespace ThaiNationalIDCard.Tests
         }
 
         /// <summary>
-        /// JPEG-shaped bytes, not a real picture. 90 00 sits at each 255 byte boundary so that stripping or
-        /// keeping status words wrongly changes the result, and 0x20 sits inside the data.
+        /// JPEG-shaped bytes with markers that walk from start to end, not a real picture. 90 00 sits at each 255 byte
+        /// boundary so that stripping or keeping status words wrongly changes the result, and 0x20 sits inside the data.
         /// </summary>
         private static void WritePhoto(byte[] image)
         {
+            byte[] start = { 0xFF, 0xD8, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00 };
             for (int i = 0; i < PhotoLength; i++)
             {
-                image[Photo + i] = (byte)((i * 31 + 7) & 0xFF);
+                byte value = (byte)((i * 31 + 7) & 0xFF);
+
+                // A bare FF in entropy data would read as a marker.
+                image[Photo + i] = value == 0xFF ? (byte)0xFE : value;
             }
 
-            image[Photo] = 0xFF;
-            image[Photo + 1] = 0xD8;
+            Array.Copy(start, 0, image, Photo, start.Length);
             for (int boundary = 255; boundary <= PhotoLength; boundary += 255)
             {
                 image[Photo + boundary - 2] = 0x90;

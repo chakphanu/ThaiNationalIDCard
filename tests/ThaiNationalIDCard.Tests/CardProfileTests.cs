@@ -171,10 +171,20 @@ namespace ThaiNationalIDCard.Tests
         [InlineData("", false, 0x00, 0x01)]
         [InlineData("67", false, 0x00, 0x01)]
         [InlineData("00673b", false, 0x00, 0x01)]
+        [InlineData("3b68", false, 0x00, 0x01)]
+        [InlineData("3c67", false, 0x00, 0x01)]
+        [InlineData("673b", false, 0x00, 0x01)]
         public void Atr_only_orders_p2_and_a_short_atr_is_the_normal_order(string atrHex, bool used, byte first, byte second)
         {
             Assert.Equal(new[] { first, second }, ReadPolicy.Default.OrderP2(MoiProfile.Public, ApduText.Bytes(atrHex), out bool ruleUsed));
             Assert.Equal(used, ruleUsed);
+        }
+
+        [Fact]
+        public void A_null_atr_is_the_normal_order()
+        {
+            Assert.Equal(new byte[] { 0x00, 0x01 }, ReadPolicy.Default.OrderP2(MoiProfile.Public, null!, out bool ruleUsed));
+            Assert.False(ruleUsed);
         }
 
         [Fact]

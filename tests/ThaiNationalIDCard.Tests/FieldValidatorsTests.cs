@@ -25,8 +25,8 @@ namespace ThaiNationalIDCard.Tests
 
         [Theory]
         [InlineData("1234567890121")]
-        [InlineData("1100000000008")]
-        [InlineData("3101234567893")]
+        [InlineData("1111111111119")]
+        [InlineData("3333333333335")]
         public void Citizen_id_formula_accepts_a_matching_check_digit(string id)
         {
             Assert.Equal(ValidationFailures.None, FieldValidators.Check(FieldCheck.CitizenId, Ascii(id)));
@@ -233,16 +233,18 @@ namespace ThaiNationalIDCard.Tests
         // ---- photo ----
 
         [Fact]
-        public void Jpeg_needs_ff_d8_at_the_start_and_ff_d9_somewhere_after_it()
+        public void Jpeg_check_walks_the_markers_the_same_way_the_parser_does()
         {
-            var good = new byte[] { 0xFF, 0xD8, 0x20, 0x20, 0xFF, 0xD9, 0x20 };
-            var noEnd = new byte[] { 0xFF, 0xD8, 0x20, 0x20 };
+            byte[] good = MiniJpeg.Build(0x20, 0x20).Concat(new byte[] { 0x20 }).ToArray();
+            byte[] noEnd = MiniJpeg.Join(MiniJpeg.Soi, MiniJpeg.Sos, new byte[] { 0x20 });
+            var noStructure = new byte[] { 0xFF, 0xD8, 0x20, 0x20, 0xFF, 0xD9, 0x20 };
             var noStart = new byte[] { 0x20, 0xD8, 0x20, 0xFF, 0xD9 };
 
             Assert.Equal(ValidationFailures.None, FieldValidators.Check(FieldCheck.Jpeg, good));
             Assert.Equal(ValidationFailures.JpegEnd, FieldValidators.Check(FieldCheck.Jpeg, noEnd));
+            Assert.Equal(ValidationFailures.JpegEnd, FieldValidators.Check(FieldCheck.Jpeg, noStructure));
             Assert.Equal(ValidationFailures.JpegStart, FieldValidators.Check(FieldCheck.Jpeg, noStart));
-            Assert.Equal(ValidationFailures.JpegStart | ValidationFailures.JpegEnd, FieldValidators.Check(FieldCheck.Jpeg, Array.Empty<byte>()));
+            Assert.Equal(ValidationFailures.JpegStart, FieldValidators.Check(FieldCheck.Jpeg, Array.Empty<byte>()));
         }
 
         [Fact]

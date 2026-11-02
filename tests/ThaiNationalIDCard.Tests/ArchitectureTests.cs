@@ -13,12 +13,6 @@ namespace ThaiNationalIDCard.Tests
     {
         private const string Root = "ThaiNationalIDCard";
 
-        private static readonly string[] LegacyTypeNames =
-        {
-            "ThaiIDCard", "Personal", "APDU_THAILAND_IDCARD", "APDU_THAILAND_IDCARD_TYPE_01", "APDU_THAILAND_IDCARD_TYPE_02",
-            "IAPDU_THAILAND_IDCARD", "CardConstants", "ApduType", "ICardTransport", "PcscCardTransport",
-        };
-
         private static IEnumerable<Type> TypesIn(string ns) =>
             typeof(IRawCardChannel).Assembly.GetTypes().Where(t => t.Namespace == ns);
 
@@ -28,15 +22,13 @@ namespace ThaiNationalIDCard.Tests
             return assembly != null && assembly.StartsWith("PCSC", StringComparison.Ordinal);
         }
 
-        private static bool IsLegacy(Type type) =>
-            type.Namespace == Root && (LegacyTypeNames.Contains(type.Name) || LegacyTypeNames.Contains(type.DeclaringType?.Name));
-
         [Theory]
         [InlineData("ThaiNationalIDCard.Protocol")]
         [InlineData("ThaiNationalIDCard.Card")]
         [InlineData("ThaiNationalIDCard.Hardware")]
         [InlineData("ThaiNationalIDCard.Workflow")]
         [InlineData("ThaiNationalIDCard.Parsing")]
+        [InlineData("ThaiNationalIDCard")]
         public void Namespace_does_not_reference_pcsc_types(string ns)
         {
             List<Type> types = TypesIn(ns).ToList();
@@ -46,18 +38,30 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Theory]
-        [InlineData("ThaiNationalIDCard.Protocol")]
-        [InlineData("ThaiNationalIDCard.Card")]
-        [InlineData("ThaiNationalIDCard.Hardware")]
-        [InlineData("ThaiNationalIDCard.Hardware.Pcsc")]
-        [InlineData("ThaiNationalIDCard.Workflow")]
-        [InlineData("ThaiNationalIDCard.Parsing")]
-        public void New_namespaces_do_not_reference_legacy_classes(string ns)
+        [InlineData("ThaiIDCard")]
+        [InlineData("Personal")]
+        [InlineData("APDU_THAILAND_IDCARD")]
+        [InlineData("APDU_THAILAND_IDCARD_TYPE_01")]
+        [InlineData("APDU_THAILAND_IDCARD_TYPE_02")]
+        [InlineData("IAPDU_THAILAND_IDCARD")]
+        [InlineData("CardConstants")]
+        [InlineData("ICardTransport")]
+        [InlineData("PcscCardTransport")]
+        public void The_legacy_types_are_gone(string name)
         {
-            List<Type> types = TypesIn(ns).ToList();
+            Assert.Null(typeof(IRawCardChannel).Assembly.GetType(Root + "." + name));
+        }
 
-            Assert.NotEmpty(types);
-            Assert.Empty(types.SelectMany(t => ReferencedTypes(t).Where(IsLegacy).Select(r => t.Name + " -> " + r.FullName)));
+        [Fact]
+        public void The_library_has_no_way_to_log()
+        {
+            // No console, debug or trace output means nothing a read holds can end up in a log by accident.
+            Type[] logging = { typeof(Console), typeof(System.Diagnostics.Debug), typeof(System.Diagnostics.Trace), typeof(System.Diagnostics.TraceSource) };
+            List<string> found = typeof(IRawCardChannel).Assembly.GetTypes()
+                .SelectMany(t => ReferencedTypes(t).Where(logging.Contains).Select(r => t.Name + " -> " + r.Name))
+                .ToList();
+
+            Assert.Empty(found);
         }
 
         [Fact]
@@ -92,12 +96,10 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
-        public void Scanner_control_it_finds_pcsc_in_the_adapter_and_in_the_legacy_transport()
+        public void Scanner_control_it_finds_pcsc_in_the_adapter()
         {
             // Without this the tests above could pass because the scanner finds nothing.
             Assert.Contains(TypesIn("ThaiNationalIDCard.Hardware.Pcsc").SelectMany(ReferencedTypes), IsPcsc);
-            Assert.Contains(ReferencedTypes(typeof(PcscCardTransport)), IsPcsc);
-            Assert.Contains(ReferencedTypes(typeof(ThaiIDCard)), IsLegacy);
         }
 
         [Fact]

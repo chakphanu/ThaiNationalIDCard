@@ -1,13 +1,15 @@
 using System;
+using System.Threading;
 using ThaiNationalIDCard.Hardware;
+
+// Messages are fixed text so they can never hold card data, which is why these do not take the standard
+// (string) and (string, Exception) constructors. Consumers can still build them for mocks.
+#pragma warning disable CA1032
 
 namespace ThaiNationalIDCard
 {
-    // TODO(step 8): these become public with the public API. They are internal until then because the
-    // public surface is designed in step 8. Messages are fixed text: they never hold card data.
-
     /// <summary>Base of every exception the library raises for a card or reader problem.</summary>
-    internal class ThaiIdCardException : Exception
+    public class ThaiIdCardException : Exception
     {
         internal ThaiIdCardException(CardFailureKind failure, string message, Exception? innerException)
             : base(message, innerException)
@@ -23,9 +25,11 @@ namespace ThaiNationalIDCard
     }
 
     /// <summary>The PC/SC service or its native library is not available.</summary>
-    internal sealed class SmartCardServiceUnavailableException : ThaiIdCardException
+    public sealed class SmartCardServiceUnavailableException : ThaiIdCardException
     {
-        internal SmartCardServiceUnavailableException(Exception? innerException = null)
+        /// <summary>Creates the exception. Its message is fixed text.</summary>
+        /// <param name="innerException">The underlying failure, if any.</param>
+        public SmartCardServiceUnavailableException(Exception? innerException = null)
             : base(CardFailureKind.ServiceUnavailable, "The smart card service is not available.", innerException)
         {
         }
@@ -49,42 +53,52 @@ namespace ThaiNationalIDCard
     }
 
     /// <summary>No reader exists, or the named reader does not exist.</summary>
-    internal sealed class ReaderNotFoundException : ThaiIdCardException
+    public sealed class ReaderNotFoundException : ThaiIdCardException
     {
-        internal ReaderNotFoundException(Exception? innerException = null)
+        /// <summary>Creates the exception. Its message is fixed text.</summary>
+        /// <param name="innerException">The underlying failure, if any.</param>
+        public ReaderNotFoundException(Exception? innerException = null)
             : base(CardFailureKind.ReaderNotFound, "No matching smart card reader was found.", innerException)
         {
         }
     }
 
     /// <summary>The reader exists but holds no usable card.</summary>
-    internal sealed class CardNotPresentException : ThaiIdCardException
+    public sealed class CardNotPresentException : ThaiIdCardException
     {
-        internal CardNotPresentException(Exception? innerException = null)
+        /// <summary>Creates the exception. Its message is fixed text.</summary>
+        /// <param name="innerException">The underlying failure, if any.</param>
+        public CardNotPresentException(Exception? innerException = null)
             : base(CardFailureKind.CardNotPresent, "No card is present in the reader.", innerException)
         {
         }
     }
 
     /// <summary>The card was removed from the reader.</summary>
-    internal sealed class CardRemovedException : ThaiIdCardException
+    public sealed class CardRemovedException : ThaiIdCardException
     {
-        internal CardRemovedException(Exception? innerException = null)
+        /// <summary>Creates the exception. Its message is fixed text.</summary>
+        /// <param name="innerException">The underlying failure, if any.</param>
+        public CardRemovedException(Exception? innerException = null)
             : base(CardFailureKind.CardRemoved, "The card was removed from the reader.", innerException)
         {
         }
     }
 
     /// <summary>The reader cannot talk to this card, or the card refused SELECT of the MOI applet.</summary>
-    internal sealed class UnsupportedCardException : ThaiIdCardException
+    public sealed class UnsupportedCardException : ThaiIdCardException
     {
-        internal UnsupportedCardException(Exception? innerException = null)
-            : base(CardFailureKind.UnsupportedCard, "The card is not supported by the reader.", innerException)
-        {
-        }
-
-        internal UnsupportedCardException(int statusWord)
-            : base(CardFailureKind.NoApplet, "The card refused selection of the expected applet.", null)
+        /// <summary>
+        /// Creates the exception. With a status word it means the card refused selection of the expected applet, and
+        /// otherwise that the reader cannot talk to this card. Its message is fixed text.
+        /// </summary>
+        /// <param name="innerException">The underlying failure, if any.</param>
+        /// <param name="statusWord">Status word of the refused SELECT.</param>
+        public UnsupportedCardException(Exception? innerException = null, int? statusWord = null)
+            : base(
+                statusWord == null ? CardFailureKind.UnsupportedCard : CardFailureKind.NoApplet,
+                statusWord == null ? "The card is not supported by the reader." : "The card refused selection of the expected applet.",
+                innerException)
         {
             StatusWord = statusWord;
         }
@@ -97,35 +111,44 @@ namespace ThaiNationalIDCard
     /// The CID gate got no citizen ID with any allowed attempt, so nothing else was read. This is what a card with a
     /// moved layout or an unknown P2 is expected to look like. The attached trace is what the next release needs.
     /// </summary>
-    internal sealed class UnknownReadBehaviourException : ThaiIdCardException
+    public sealed class UnknownReadBehaviourException : ThaiIdCardException
     {
-        internal UnknownReadBehaviourException(int? lastStatusWord)
+        /// <summary>Creates the exception. Its message is fixed text.</summary>
+        /// <param name="lastStatusWord">The last status word the card gave, if any.</param>
+        public UnknownReadBehaviourException(int? lastStatusWord = null)
             : base(CardFailureKind.UnknownReadBehaviour, "The card did not answer the citizen ID read as expected.", null)
         {
             LastStatusWord = lastStatusWord;
         }
 
+        /// <summary>The last status word the card gave, if any.</summary>
         public int? LastStatusWord { get; }
     }
 
     /// <summary>The caller cancelled the read. It still is an OperationCanceledException, with the trace on it.</summary>
-    internal sealed class ReadCanceledException : OperationCanceledException
+    public sealed class ReadCanceledException : OperationCanceledException
     {
-        internal ReadCanceledException(ReadDiagnostics diagnostics, System.Threading.CancellationToken token)
+        internal ReadCanceledException(ReadDiagnostics diagnostics, CancellationToken token)
             : base("The read was cancelled.", token)
         {
             Diagnostics = diagnostics;
         }
 
+        /// <summary>What the read did up to the cancellation.</summary>
         public ReadDiagnostics Diagnostics { get; }
     }
 
     /// <summary>Any other communication failure. <see cref="ThaiIdCardException.Failure"/> tells which.</summary>
-    internal sealed class CardCommunicationException : ThaiIdCardException
+    public sealed class CardCommunicationException : ThaiIdCardException
     {
-        internal CardCommunicationException(CardFailureKind failure, Exception? innerException = null)
+        /// <summary>Creates the exception. Its message is fixed text plus the name of the failure.</summary>
+        /// <param name="failure">Which failure this is.</param>
+        /// <param name="innerException">The underlying failure, if any.</param>
+        /// <param name="statusWord">Status word that caused the failure, when there was one.</param>
+        public CardCommunicationException(CardFailureKind failure, Exception? innerException = null, int? statusWord = null)
             : base(failure, "Communication with the card failed: " + failure + ".", innerException)
         {
+            StatusWord = statusWord;
         }
 
         /// <summary>Status word that caused the failure, when there was one.</summary>
@@ -134,7 +157,7 @@ namespace ThaiNationalIDCard
 
     /// <summary>
     /// The guard refused a command. This signals a library or profile bug, not a card problem, so it is
-    /// not part of the planned public exception list.
+    /// not part of the planned public exception list. It reaches callers as <see cref="ThaiIdCardException"/>.
     /// </summary>
     internal sealed class CommandRejectedException : ThaiIdCardException
     {

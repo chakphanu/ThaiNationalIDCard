@@ -36,18 +36,6 @@ namespace ThaiNationalIDCard.Hardware
         IReaderMonitor CreateMonitor();
     }
 
-    /// <summary>Card state of one reader as far as the guard layer needs it.</summary>
-    internal enum ReaderCardState
-    {
-        Unknown = 0,
-        Empty,
-        Present,
-
-        /// <summary>A card is in the reader but did not answer the reset.</summary>
-        Mute,
-        Unavailable,
-    }
-
     internal readonly struct ReaderStatus
     {
         public ReaderStatus(string name, ReaderCardState state)
@@ -59,13 +47,6 @@ namespace ThaiNationalIDCard.Hardware
         public string Name { get; }
 
         public ReaderCardState State { get; }
-    }
-
-    internal enum CardTransportProtocol
-    {
-        T0,
-        T1,
-        Raw,
     }
 
     /// <summary>What a successful connect reports. The ATR is never null.</summary>

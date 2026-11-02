@@ -558,7 +558,7 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
-        public void Photo_without_jpeg_markers_is_marked_and_still_kept_until_step_7()
+        public void Photo_without_jpeg_markers_is_marked_here_and_the_parser_withholds_it()
         {
             var card = new SimulatedCard();
             card.MoiImage[SyntheticImage.Photo] = 0x00;
