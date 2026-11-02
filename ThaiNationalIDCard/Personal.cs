@@ -21,6 +21,7 @@ namespace ThaiNationalIDCard
         private string _issuer;
         private string[] _th_personal;
         private string[] _en_personal;
+        private string[] _address_parts; // lazy cache of the trimmed '#' fields of _address; reset by the Address setter
 
         private byte[] _photo_jpeg;
 
@@ -71,6 +72,7 @@ namespace ThaiNationalIDCard
             set
             {
                 _address = value.Trim();
+                _address_parts = null; // invalidate the split cache
             }
             get
             {
@@ -82,7 +84,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _address.Split('#')[0].Trim();
+                return AddressPart(0);
             }
         }
 
@@ -91,7 +93,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _address.Split('#')[1].Trim();
+                return AddressPart(1);
             }
         }
 
@@ -100,7 +102,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _address.Split('#')[2].Trim();
+                return AddressPart(2);
             }
         }
 
@@ -108,7 +110,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _address.Split('#')[3].Trim();
+                return AddressPart(3);
             }
         }
 
@@ -116,7 +118,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _address.Split('#')[5].Trim();
+                return AddressPart(5);
             }
         }
 
@@ -124,7 +126,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _address.Split('#')[6].Trim();
+                return AddressPart(6);
             }
         }
 
@@ -132,8 +134,39 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _address.Split('#')[7].Trim();
+                return AddressPart(7);
             }
+        }
+
+        // Splits _address once and caches the trimmed parts (was: Split on every getter call).
+        private string AddressPart(int index)
+        {
+            string[] parts = _address_parts;
+            if (parts == null)
+            {
+                parts = _address.Split('#');
+                for (int i = 0; i < parts.Length; i++)
+                    parts[i] = parts[i].Trim();
+                _address_parts = parts;
+            }
+            return parts[index];
+        }
+
+        // Parses yyyyMMdd (Buddhist year) at offset; month/day outside range are clamped instead of throwing.
+        private static DateTime ClampedDate(string value, int offset)
+        {
+            var year = Convert.ToInt32(value.Substring(offset, 4)) - 543;
+            var month = Convert.ToInt32(value.Substring(offset + 4, 2));
+            var day = Convert.ToInt32(value.Substring(offset + 6, 2));
+
+            // Month/day 00 would throw in DateTime; use the same lower clamp as Birthday and the upper clamp Expire had.
+            month = month < 1 ? 1 : (month > 12 ? 12 : month);
+            day = day < 1 ? 1 : (day > 31 ? 31 : day);
+            // 31 in a 30-day month (or 29/30 in February) would throw too; clamp to the month length.
+            int daysInMonth = DateTime.DaysInMonth(year, month);
+            day = day > daysInMonth ? daysInMonth : day;
+
+            return new DateTime(year, month, day);
         }
 
         public string Issue_Expire
@@ -148,11 +181,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return new DateTime(
-                    Convert.ToInt32(_issue_expire.Substring(0, 4)) - 543,
-                    Convert.ToInt32(_issue_expire.Substring(4, 2)),
-                    Convert.ToInt32(_issue_expire.Substring(6, 2))
-                    );
+                return ClampedDate(_issue_expire, 0);
             }
         }
 
@@ -160,11 +189,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                var year = Convert.ToInt32(_issue_expire.Substring(8, 4)) - 543;
-                var month = Convert.ToInt32(_issue_expire.Substring(12, 2));
-                var day = Convert.ToInt32(_issue_expire.Substring(14, 2));
-
-                return new DateTime(year, month > 12 ? 12 : month, day > 31 ? 31 : day);
+                return ClampedDate(_issue_expire, 8);
             }
         }
 

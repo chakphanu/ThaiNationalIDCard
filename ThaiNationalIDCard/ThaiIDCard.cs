@@ -26,10 +26,11 @@ namespace ThaiNationalIDCard
     {
         const int ECODE_SCardError = 256;
         const int ECODE_UNSUPPORT_CARD = 1;
+        const int ECODE_UNEXPECTED = 512;
 
         private static readonly IContextFactory _contextFactory = ContextFactory.Instance;
         private ISCardContext _hContext;
-        private SCardReader _reader;
+        private ISCardReader _reader;
         private SCardError _err;
         private IntPtr _pioSendPci;
         
@@ -38,6 +39,25 @@ namespace ThaiNationalIDCard
 
         private string _error_message;
         private int _error_code;
+
+        // Providers and delay are replaced only by the internal test constructor below.
+        private readonly Func<ISCardContext> _contextProvider;
+        private readonly Func<ISCardContext, ISCardReader> _readerProvider;
+        private readonly int _atrDelayMilliseconds = 1500;
+
+        public ThaiIDCard()
+        {
+            _contextProvider = () => _contextFactory.Establish(SCardScope.System);
+            _readerProvider = context => new SCardReader(context);
+        }
+
+        // Test seam only (see InternalsVisibleTo): drives the card flow with a fake PC/SC context and reader.
+        internal ThaiIDCard(ISCardContext context, ISCardReader reader, int atrDelayMilliseconds)
+        {
+            _contextProvider = () => context;
+            _readerProvider = c => reader;
+            _atrDelayMilliseconds = atrDelayMilliseconds;
+        }
 
         public event handlePhotoProgress eventPhotoProgress;
         public event handleCardInserted eventCardInserted;
@@ -63,17 +83,20 @@ namespace ThaiNationalIDCard
         {
             try
             {
-                Personal personal;
-                if (eventCardInserted != null)
-                {
-                    personal = readAll(false, args.ReaderName);
-                    eventCardInserted(personal);
-                }
-                if (eventCardInsertedWithPhoto != null)
-                {
-                    personal = readAll(true, args.ReaderName);
-                    eventCardInsertedWithPhoto(personal);
-                }
+                var inserted = eventCardInserted;
+                var insertedWithPhoto = eventCardInsertedWithPhoto;
+                if (inserted == null && insertedWithPhoto == null)
+                    return;
+
+                // Read the card once and share the result (was: one full read per subscribed event).
+                Personal personal = readAll(insertedWithPhoto != null, args.ReaderName);
+
+                // readAll returns null when Open failed (error state already stored). Handlers still receive that
+                // null exactly as before, because existing applications check for it to report the failure.
+                if (inserted != null)
+                    inserted(personal);
+                if (insertedWithPhoto != null)
+                    insertedWithPhoto(personal);
             }
             catch (PCSCException ex)
             {
@@ -81,7 +104,13 @@ namespace ThaiNationalIDCard
                 _error_message = "_Inserted Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
                 Debug.Print(_error_message);
             }
-           
+            catch (Exception ex)
+            {
+                // This runs on the PC/SC monitor thread: an escaping exception would crash the process.
+                _error_code = ECODE_UNEXPECTED;
+                _error_message = "_Inserted Err: " + ex.Message;
+                Debug.Print(_error_message);
+            }
         }
 
         private void _Removed(string eventName, CardStatusEventArgs unknown)
@@ -177,6 +206,8 @@ namespace ThaiNationalIDCard
                 command = _apdu.APDU_GET_RESPONSE().Concat(new byte[] { responseApdu.SW2 }).ToArray();
                 pbRecvBuffer = new byte[258];
                 _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
+                // A failed GET RESPONSE used to be ignored (zero-filled buffer returned); now it throws PCSCException.
+                CheckErr(_err);
                 if(pbRecvBuffer.Length - responseApdu.SW2  == 2)
                 {
                     return pbRecvBuffer.Take(pbRecvBuffer.Length - 2).ToArray();
@@ -188,12 +219,15 @@ namespace ThaiNationalIDCard
 
         private byte[] SendPhotoCommand()
         {
-            var s = new MemoryStream();
             byte[][] cmds_photo = _apdu.EF_CARD_PHOTO;
+            // Pre-size: each chunk is at most 255 bytes, so the stream never has to grow.
+            var s = new MemoryStream(cmds_photo.Length * 256);
 
             for (int i = 0; i < cmds_photo.Length; i++)
             {
-                s.Write(SendCommand(cmds_photo[i]), 0, SendCommand(cmds_photo[i]).Length);
+                // Transmit each chunk once and reuse the result (was: SendCommand called twice, 2x APDU traffic).
+                byte[] chunk = SendCommand(cmds_photo[i]);
+                s.Write(chunk, 0, chunk.Length);
                 eventPhotoProgress?.Invoke(i + 1, cmds_photo.Length);
             }
 
@@ -206,9 +240,17 @@ namespace ThaiNationalIDCard
         {
             try
             {
-                _hContext = _contextFactory.Establish(SCardScope.System);
-                string[] szReaders = _hContext.GetReaders();
-                _hContext.Release();
+                // Local context: do not store a released context in _hContext, and always release it.
+                ISCardContext context = _contextProvider();
+                string[] szReaders;
+                try
+                {
+                    szReaders = context.GetReaders();
+                }
+                finally
+                {
+                    context.Release();
+                }
 
                 if (szReaders.Length <= 0)
                     throw new PCSCException(SCardError.NoReadersAvailable,
@@ -220,20 +262,46 @@ namespace ThaiNationalIDCard
                 _error_code = ECODE_SCardError;
                 _error_message = "GetReaders Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
                 Debug.Print(_error_message);
-                throw ex;
+                // Rethrow without resetting the stack trace.
+                throw;
             }
         }
 
 
-        public Boolean Open(string readerName = null)
+        // Best-effort release of reader and context after a failed Open/read; never throws, never touches error state.
+        private void Abort()
         {
             try
             {
-                // delay 1.5 second for ATR reading.
-                Thread.Sleep(1500);
+                if (_reader != null && _reader.IsConnected)
+                    _reader.Disconnect(SCardReaderDisposition.Leave);
+            }
+            catch (Exception ex)
+            {
+                Debug.Print("Abort disconnect Err: " + ex.Message);
+            }
 
-                _hContext = _contextFactory.Establish(SCardScope.System);
-                _reader = new SCardReader(_hContext);
+            try
+            {
+                if (_hContext != null)
+                    _hContext.Release();
+            }
+            catch (Exception ex)
+            {
+                Debug.Print("Abort release Err: " + ex.Message);
+            }
+        }
+
+        public Boolean Open(string readerName = null)
+        {
+            bool opened = false;
+            try
+            {
+                // delay 1.5 second for ATR reading.
+                Thread.Sleep(_atrDelayMilliseconds);
+
+                _hContext = _contextProvider();
+                _reader = _readerProvider(_hContext);
 
                 // Connect to the card
                 if (String.IsNullOrEmpty(readerName))
@@ -306,6 +374,7 @@ namespace ThaiNationalIDCard
                 // select MOI Applet
                 if (SelectApplet())
                 {
+                    opened = true;
                     return true;
                 }
                 else
@@ -323,6 +392,12 @@ namespace ThaiNationalIDCard
                 _error_message = "Open Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
                 Debug.Print(_error_message);
                 return false;
+            }
+            finally
+            {
+                // Every failure path used to leak the connected reader and the context.
+                if (!opened)
+                    Abort();
             }
         }
 
@@ -348,8 +423,17 @@ namespace ThaiNationalIDCard
             Personal personal = new Personal();
             if (Open(readerName))
             {
-                // CID
-                personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CID));
+                try
+                {
+                    // CID
+                    personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CID));
+                }
+                catch
+                {
+                    // Do not leave the card connected when a transmit fails; the exception still propagates.
+                    Abort();
+                    throw;
+                }
 
                 Close();
                 return personal;
@@ -363,26 +447,34 @@ namespace ThaiNationalIDCard
             Personal personal = new Personal();
             if (Open(readerName))
             {
-
-                // CID
-                personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CID));
-
-                // Fullname Thai + Eng + BirthDate + Sex
-                personal.Info = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_PERSON_INFO));
-
-                // Address
-                personal.Address = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_ADDRESS));
-
-                // issue/expire
-                personal.Issue_Expire = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CARD_ISSUE_EXPIRE));
-
-                // issuer
-                personal.Issuer = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CARD_ISSUER));
-
-                if (with_photo)
+                try
                 {
-                    // Photo
-                    personal.PhotoRaw = SendPhotoCommand();
+                    // CID
+                    personal.Citizenid = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CID));
+
+                    // Fullname Thai + Eng + BirthDate + Sex
+                    personal.Info = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_PERSON_INFO));
+
+                    // Address
+                    personal.Address = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_ADDRESS));
+
+                    // issue/expire
+                    personal.Issue_Expire = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CARD_ISSUE_EXPIRE));
+
+                    // issuer
+                    personal.Issuer = GetUTF8FromAsciiBytes(SendCommand(_apdu.EF_CARD_ISSUER));
+
+                    if (with_photo)
+                    {
+                        // Photo
+                        personal.PhotoRaw = SendPhotoCommand();
+                    }
+                }
+                catch
+                {
+                    // Do not leave the card connected when a transmit fails; the exception still propagates.
+                    Abort();
+                    throw;
                 }
 
 
