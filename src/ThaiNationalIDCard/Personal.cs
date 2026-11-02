@@ -7,8 +7,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+// TODO(phase 4): PhotoBitmap was removed from netstandard2.0/net8.0 because it needs WPF and System.Drawing.
+// The ThaiNationalIDCard.Windows package will provide a replacement helper. The old code is kept
+// below behind the LEGACY_PHOTO_BITMAP symbol, which is never defined.
+#if LEGACY_PHOTO_BITMAP
 using System.Windows.Media.Imaging;
 using System.Drawing.Imaging;
+#endif
 using System.IO;
 
 namespace ThaiNationalIDCard
@@ -38,6 +43,7 @@ namespace ThaiNationalIDCard
             }
         }
 
+#if LEGACY_PHOTO_BITMAP
         public System.Drawing.Bitmap PhotoBitmap
         {
             get
@@ -55,14 +61,15 @@ namespace ThaiNationalIDCard
                 }
             }
         }
+#endif
 
         public string Info
         {
             set
             {
                 _personal = value;
-                _th_personal = _personal.Substring(0, 100).Split('#');
-                _en_personal = _personal.Substring(100, 100).Split('#');
+                _th_personal = _personal.Substring(CardConstants.ThaiNameOffset, CardConstants.NameFieldLength).Split('#');
+                _en_personal = _personal.Substring(CardConstants.EnglishNameOffset, CardConstants.NameFieldLength).Split('#');
             }
         }
 
@@ -144,6 +151,8 @@ namespace ThaiNationalIDCard
             }
         }
 
+        // KNOWN BUG (phase 3): (e) Issue/Expire/Birthday date getters: Issue has no month/day guard,
+        // Expire only clamps month/day upward (00 throws), Birthday maps year 0 to the current year.
         public DateTime Issue
         {
             get
@@ -182,11 +191,12 @@ namespace ThaiNationalIDCard
             {
                 var dateNow = DateTime.Now;
                 int year, month, day;
-                year = Convert.ToInt32(_personal.Substring(200, 4));
+                // KNOWN BUG (phase 3): (e) year 0000 silently becomes the current year (wrong data).
+                year = Convert.ToInt32(_personal.Substring(CardConstants.BirthYearOffset, CardConstants.BirthYearLength));
                 year = year > 0 ? year - 543 : dateNow.Year;
-                month = Convert.ToInt32(_personal.Substring(204, 2));
+                month = Convert.ToInt32(_personal.Substring(CardConstants.BirthMonthOffset, CardConstants.DatePartLength));
                 month = month > 0 ? month : 1;
-                day = Convert.ToInt32(_personal.Substring(206, 2));
+                day = Convert.ToInt32(_personal.Substring(CardConstants.BirthDayOffset, CardConstants.DatePartLength));
                 day = day > 0 ? day : 1;
 
                 return new DateTime(year, month, day);
@@ -197,7 +207,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return (Convert.ToInt32(_personal.Substring(200, 4)) - 543).ToString();
+                return (Convert.ToInt32(_personal.Substring(CardConstants.BirthYearOffset, CardConstants.BirthYearLength)) - 543).ToString();
             }
         }
 
@@ -205,7 +215,7 @@ namespace ThaiNationalIDCard
         {
             get
             {
-                return _personal.Substring(208, 1);
+                return _personal.Substring(CardConstants.SexOffset, CardConstants.SexLength);
             }
         }
 

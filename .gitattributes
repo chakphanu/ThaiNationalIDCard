@@ -1,0 +1,20 @@
+# Normalize line endings: LF in the repository, native on checkout for text files.
+* text=auto
+
+*.cs      text diff=csharp
+*.csproj  text
+*.props   text
+*.targets text
+*.sln     text eol=crlf
+*.md      text
+*.json    text
+*.yml     text
+*.resx    text
+
+# Binary files
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.nupkg binary
+*.snupkg binary

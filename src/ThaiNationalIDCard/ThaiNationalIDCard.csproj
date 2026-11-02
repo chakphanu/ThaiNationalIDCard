@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <RootNamespace>ThaiNationalIDCard</RootNamespace>
+    <AssemblyName>ThaiNationalIDCard</AssemblyName>
+
+    <!-- TODO(phase 2-4): legacy code predates nullable reference types. Remove this NoWarn once
+         the legacy files are annotated. Chosen over per-file '#nullable disable' to avoid touching sources. -->
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8606;CS8607;CS8608;CS8609;CS8610;CS8611;CS8612;CS8613;CS8614;CS8615;CS8616;CS8617;CS8618;CS8619;CS8620;CS8621;CS8622;CS8624;CS8625;CS8629;CS8631;CS8633;CS8634;CS8643;CS8644;CS8645;CS8653;CS8654;CS8655;CS8656;CS8667;CS8669;CS8670;CS8714;CS8762;CS8763;CS8764;CS8765;CS8766;CS8767</NoWarn>
+    <!-- TODO(phase 4): remove once public members of the legacy API are documented. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- TODO(phase 3-4): legacy analyzer findings stay visible as warnings but do not fail CI builds. Remove as they are fixed. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CA1001;CA1305;CA1707;CA1822;CA1824;CA1852;CA1859;CA2200</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata -->
+  <PropertyGroup>
+    <PackageId>ThaiNationalIDCard</PackageId>
+    <Authors>chakphanu</Authors>
+    <Description>Read data and photo from a Thai National ID smartcard (citizen id, Thai and English name, birth date, address, issue/expire date, photo) through a PC/SC reader.</Description>
+    <PackageTags>thai;thailand;national-id;idcard;smartcard;pcsc;nfc;reader</PackageTags>
+    <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/chakphanu/ThaiNationalIDCard</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/chakphanu/ThaiNationalIDCard</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PCSC" />
+    <PackageReference Include="PCSC.Iso7816" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- TIS-620 decoding: CodePagesEncodingProvider is built into net8.0, a package on netstandard2.0. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Encoding.CodePages" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ThaiNationalIDCard.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

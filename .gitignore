@@ -114,3 +114,17 @@ UpgradeLog*.XML
 \.vs/ThaiNationalIDCard/v15/Server/sqlite3/storage\.ide-shm
 
 \.vs/ThaiNationalIDCard/v15/Server/sqlite3/storage\.ide-wal
+
+# --- modernization additions ---
+.vs/
+bin/
+obj/
+*.nupkg
+*.snupkg
+TestResults/
+coverage/
+coverage*.xml
+coverage*.json
+coverage*.info
+*.coverage
+*.coveragexml

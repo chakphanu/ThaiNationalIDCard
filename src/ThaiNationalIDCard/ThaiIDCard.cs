@@ -28,16 +28,28 @@ namespace ThaiNationalIDCard
         const int ECODE_UNSUPPORT_CARD = 1;
 
         private static readonly IContextFactory _contextFactory = ContextFactory.Instance;
+        // Only used by GetReaders(); connection handling lives in the transport.
         private ISCardContext _hContext;
-        private SCardReader _reader;
-        private SCardError _err;
-        private IntPtr _pioSendPci;
-        
+        private readonly ICardTransport _transport;
+        private readonly int _atrReadDelayMs;
+
         private IAPDU_THAILAND_IDCARD _apdu;
         private SCardMonitor _monitor;
 
         private string _error_message;
         private int _error_code;
+
+        public ThaiIDCard()
+            : this(new PcscCardTransport(_contextFactory), CardConstants.AtrReadDelayMs)
+        {
+        }
+
+        /// <summary>Test seam: runs the APDU flow over any transport.</summary>
+        internal ThaiIDCard(ICardTransport transport, int atrReadDelayMs)
+        {
+            _transport = transport;
+            _atrReadDelayMs = atrReadDelayMs;
+        }
 
         public event handlePhotoProgress eventPhotoProgress;
         public event handleCardInserted eventCardInserted;
@@ -59,11 +71,15 @@ namespace ThaiNationalIDCard
             return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }
 
-        private void _Inserted(CardStatusEventArgs args)
+        // internal (was private) so tests can drive it without an SCardMonitor.
+        internal void _Inserted(CardStatusEventArgs args)
         {
             try
             {
                 Personal personal;
+                // KNOWN BUG (phase 3): (d) when both events are subscribed the card is read twice;
+                // readAll can return null (Open failed) and that null is passed to the event handlers;
+                // only PCSCException is caught, anything else escapes the monitor thread.
                 if (eventCardInserted != null)
                 {
                     personal = readAll(false, args.ReaderName);
@@ -129,32 +145,18 @@ namespace ThaiNationalIDCard
             }
         }
 
-        private void CheckErr(SCardError _err)
-        {
-            if (_err != SCardError.Success)
-                throw new PCSCException(_err,
-                    SCardHelper.StringifyError(_err));
-        }
-
         private string GetUTF8FromAsciiBytes(byte[] ascii_bytes)
         {
-            byte[] utf8;
-            utf8 = Encoding.Convert(
-                Encoding.GetEncoding("TIS-620"),
-                Encoding.UTF8,
-                ascii_bytes
-                );
-            return Encoding.UTF8.GetString(utf8);
+            // SendCommand output is passed as is, so status words are not trimmed here (hasStatusWord: false),
+            // same as the legacy code. NUL/space padding at the end is now trimmed by the decoder.
+            return ThaiCardTextDecoder.DecodeTis620(ascii_bytes, false);
         }
 
         private bool SelectApplet()
         {
             byte[] command = _apdu.APDU_SELECT(_apdu.AID_MOI);
-            byte[] pbRecvBuffer;
-            pbRecvBuffer = new byte[256];
-            _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
-            CheckErr(_err);
-            var responseApdu = new ResponseApdu(pbRecvBuffer, IsoCase.Case2Short, _reader.ActiveProtocol);
+            byte[] pbRecvBuffer = _transport.Transmit(command);
+            var responseApdu = ParseResponse(pbRecvBuffer);
 
             if (responseApdu.SW1.Equals((byte)SW1Code.NormalDataResponse) || responseApdu.SW1.Equals((byte)SW1Code.Normal))
             {
@@ -164,19 +166,29 @@ namespace ThaiNationalIDCard
             return false;
         }
 
+        // The protocol argument of ResponseApdu does not influence SW1/SW2 parsing; it throws
+        // InvalidApduException for responses shorter than 2 bytes, exactly as before.
+        private static ResponseApdu ParseResponse(byte[] response)
+        {
+            return new ResponseApdu(response, IsoCase.Case2Short, SCardProtocol.T1);
+        }
+
         private byte[] SendCommand(byte [] command)
         {
-            byte[] pbRecvBuffer;
-            pbRecvBuffer = new byte[256];
-            _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
-            CheckErr(_err);
-            var responseApdu = new ResponseApdu(pbRecvBuffer, IsoCase.Case2Short, _reader.ActiveProtocol);
+            byte[] pbRecvBuffer = _transport.Transmit(command);
+            var responseApdu = ParseResponse(pbRecvBuffer);
 
             if(responseApdu.SW1.Equals((byte)SW1Code.NormalDataResponse))
             {
                 command = _apdu.APDU_GET_RESPONSE().Concat(new byte[] { responseApdu.SW2 }).ToArray();
-                pbRecvBuffer = new byte[258];
-                _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
+                // KNOWN BUG (phase 3): (b) the legacy code ignored the SCardError of this second Transmit.
+                // The transport now throws PCSCException on any non-success error, so on this error path
+                // the failure is surfaced instead of silently returning a zero-filled buffer. Phase 3 should
+                // pin this with a test.
+                pbRecvBuffer = _transport.Transmit(command);
+                // Legacy: relied on the buffer being shrunk to the real length, so "Length - SW2 == 2"
+                // meant "response is SW2 data bytes + SW1/SW2". With exact-length responses the check is
+                // unchanged. Note it is also false when SW2 == 0 (256 data bytes), as before.
                 if(pbRecvBuffer.Length - responseApdu.SW2  == 2)
                 {
                     return pbRecvBuffer.Take(pbRecvBuffer.Length - 2).ToArray();
@@ -193,6 +205,7 @@ namespace ThaiNationalIDCard
 
             for (int i = 0; i < cmds_photo.Length; i++)
             {
+                // KNOWN BUG (phase 3): (a) SendCommand is called twice per chunk (40 transmits instead of 20).
                 s.Write(SendCommand(cmds_photo[i]), 0, SendCommand(cmds_photo[i]).Length);
                 eventPhotoProgress?.Invoke(i + 1, cmds_photo.Length);
             }
@@ -220,6 +233,7 @@ namespace ThaiNationalIDCard
                 _error_code = ECODE_SCardError;
                 _error_message = "GetReaders Err: " + ex.Message + " (" + ex.SCardError.ToString() + ")";
                 Debug.Print(_error_message);
+                // KNOWN BUG (phase 3): (c) "throw ex;" resets the stack trace, should be "throw;".
                 throw ex;
             }
         }
@@ -230,78 +244,18 @@ namespace ThaiNationalIDCard
             try
             {
                 // delay 1.5 second for ATR reading.
-                Thread.Sleep(1500);
+                Thread.Sleep(_atrReadDelayMs);
 
-                _hContext = _contextFactory.Establish(SCardScope.System);
-                _reader = new SCardReader(_hContext);
+                _transport.Connect(readerName);
 
-                // Connect to the card
-                if (String.IsNullOrEmpty(readerName))
-                {
-                    // Open first avaliable reader.
-                    // Retrieve the list of Smartcard _readers
-                    string[] szReaders = _hContext.GetReaders();
-                    if (szReaders.Length <= 0)
-                        throw new PCSCException(SCardError.NoReadersAvailable,
-                            "Could not find any Smartcard _reader.");
+                byte[] atr = _transport.Atr;
 
-                    _err = _reader.Connect(szReaders[0],
-                                SCardShareMode.Shared,
-                                SCardProtocol.T0 | SCardProtocol.T1);
-                    CheckErr(_err);
-                }
-                else
-                {
-                    _err = _reader.Connect(readerName,
-                                SCardShareMode.Shared,
-                                SCardProtocol.T0 | SCardProtocol.T1);
-                    CheckErr(_err);
-                }
-
-
-                _pioSendPci = new IntPtr();
-                switch (_reader.ActiveProtocol)
-                {
-                    case SCardProtocol.T0:
-                        _pioSendPci = SCardPCI.T0;
-                        break;
-                    case SCardProtocol.T1:
-                        _pioSendPci = SCardPCI.T1;
-                        break;
-                    case SCardProtocol.Raw:
-                        _pioSendPci = SCardPCI.Raw;
-                        break;
-                    default:
-                        throw new PCSCException(SCardError.ProtocolMismatch,
-                            "Protocol not supported: "
-                            + _reader.ActiveProtocol.ToString());
-                }
-
-                string[] readerNames;
-                SCardProtocol proto;
-                SCardState state;
-                byte[] atr;
-
-                var sc = _reader.Status(
-                    out readerNames,    // contains the reader name(s)
-                    out state,          // contains the current state (flags)
-                    out proto,          // contains the currently used communication protocol
-                    out atr);           // contains the ATR
-
-                if (atr == null || atr.Length < 2)
+                if (atr == null || atr.Length < CardConstants.AtrMinLength)
                 {
                     return false;
                 }
-                
-                if (atr[0] == 0x3B && atr[1] == 0x67)
-                {
-                    /* corruption card */
-                    _apdu = new APDU_THAILAND_IDCARD_TYPE_01();
-                }
-                else
-                {
-                    _apdu = new APDU_THAILAND_IDCARD_TYPE_02();
-                }
+
+                _apdu = CreateApdu(DetectApduType(atr));
 
                 // select MOI Applet
                 if (SelectApplet())
@@ -326,12 +280,35 @@ namespace ThaiNationalIDCard
             }
         }
 
+        /// <summary>
+        /// Legacy rule: ATR starting with 3B 67 is the "corruption card" (Type01), everything else is Type02.
+        /// Open() rejects a null or shorter than 2 bytes ATR before calling this; here such input is Type02.
+        /// </summary>
+        internal static ApduType DetectApduType(byte[] atr)
+        {
+            if (atr != null
+                && atr.Length >= CardConstants.AtrMinLength
+                && atr[0] == CardConstants.AtrPrefixByte0
+                && atr[1] == CardConstants.AtrPrefixByte1)
+            {
+                return ApduType.Type01;
+            }
+
+            return ApduType.Type02;
+        }
+
+        private static IAPDU_THAILAND_IDCARD CreateApdu(ApduType type)
+        {
+            return type == ApduType.Type01
+                ? (IAPDU_THAILAND_IDCARD)new APDU_THAILAND_IDCARD_TYPE_01()
+                : new APDU_THAILAND_IDCARD_TYPE_02();
+        }
+
         public Boolean Close()
         {
             try
             {
-                _reader.Disconnect(SCardReaderDisposition.Leave);
-                _hContext.Release();
+                _transport.Disconnect();
                 return true;
             }
             catch (PCSCException ex)

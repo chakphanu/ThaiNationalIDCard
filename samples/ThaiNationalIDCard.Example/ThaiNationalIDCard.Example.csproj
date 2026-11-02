@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>ThaiNationalIDCard.Example</RootNamespace>
+    <AssemblyName>ThaiNationalIDCard.Example</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <!-- Legacy sample code: nullable warnings are not fixed in the sample yet. -->
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8622;CS8625</NoWarn>
+    <!-- TODO(phase 3-4): legacy analyzer findings stay visible as warnings but do not fail CI builds. Remove as they are fixed. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CA1001;CA1305;CA1707;CA1822;CA1824;CA1852;CA1859;CA2200</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ThaiNationalIDCard\ThaiNationalIDCard.csproj" />
+  </ItemGroup>
+
+</Project>

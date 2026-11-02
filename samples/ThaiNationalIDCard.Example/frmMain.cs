@@ -142,7 +142,17 @@ namespace ThaiNationalIDCard.Example
             lbl_en_lastname.BeginInvoke(new MethodInvoker(delegate { lbl_en_lastname.Text = personal.En_Lastname; }));
             lbl_issue.BeginInvoke(new MethodInvoker(delegate { lbl_issue.Text = personal.Issue.ToString("dd/MM/yyyy"); }));
             lbl_expire.BeginInvoke(new MethodInvoker(delegate { lbl_expire.Text = personal.Expire.ToString("dd/MM/yyyy"); }));
-            pictureBox1.BeginInvoke(new MethodInvoker(delegate { pictureBox1.Image = personal.PhotoBitmap; }));
+            pictureBox1.BeginInvoke(new MethodInvoker(delegate { pictureBox1.Image = PhotoToImage(personal); }));
+        }
+
+        // TODO(phase 4): replace with the ThaiNationalIDCard.Windows helper.
+        // Personal.PhotoBitmap was removed from the core library (it required WPF).
+        private static Image PhotoToImage(Personal personal)
+        {
+            if (personal.PhotoRaw == null)
+                return null;
+            // The stream must stay open for the lifetime of the Image.
+            return new Bitmap(new System.IO.MemoryStream(personal.PhotoRaw));
         }
 
         private void btnReadWithPhoto_Click_1(object sender, EventArgs e)
@@ -164,7 +174,7 @@ namespace ThaiNationalIDCard.Example
                 lbl_en_lastname.Text = personal.En_Lastname;
                 lbl_issue.Text = personal.Issue.ToString("dd/MM/yyyy");
                 lbl_expire.Text = personal.Expire.ToString("dd/MM/yyyy");
-                pictureBox1.Image = personal.PhotoBitmap;
+                pictureBox1.Image = PhotoToImage(personal);
             }
             else if (idcard.ErrorCode() > 0)
             {

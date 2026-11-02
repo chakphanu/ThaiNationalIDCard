@@ -1,0 +1,92 @@
+# EditorConfig: https://editorconfig.org
+# NOTE: all C# source, comments and identifiers must be ASCII English only (no emoji).
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,json,yml,yaml,xml,resx,config}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.sln]
+end_of_line = crlf
+indent_style = tab
+
+[*.cs]
+# Organize usings
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# this. qualification
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
+# var preferences
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Braces / newlines
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = true:suggestion
+
+# Naming: symbols
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+dotnet_naming_symbols.members.applicable_kinds = method, property, event
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, internal, private_protected
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+
+# Naming: styles
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.i_prefix_pascal.capitalization = pascal_case
+dotnet_naming_style.i_prefix_pascal.required_prefix = I
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.t_prefix_pascal.capitalization = pascal_case
+dotnet_naming_style.t_prefix_pascal.required_prefix = T
+
+# Naming: rules (suggestion level; legacy code is migrated in later phases)
+dotnet_naming_rule.interfaces_rule.symbols = interfaces
+dotnet_naming_rule.interfaces_rule.style = i_prefix_pascal
+dotnet_naming_rule.interfaces_rule.severity = suggestion
+
+dotnet_naming_rule.types_rule.symbols = types
+dotnet_naming_rule.types_rule.style = pascal_case
+dotnet_naming_rule.types_rule.severity = suggestion
+
+dotnet_naming_rule.members_rule.symbols = members
+dotnet_naming_rule.members_rule.style = pascal_case
+dotnet_naming_rule.members_rule.severity = suggestion
+
+dotnet_naming_rule.constants_rule.symbols = constants
+dotnet_naming_rule.constants_rule.style = pascal_case
+dotnet_naming_rule.constants_rule.severity = suggestion
+
+dotnet_naming_rule.private_fields_rule.symbols = private_fields
+dotnet_naming_rule.private_fields_rule.style = underscore_camel
+dotnet_naming_rule.private_fields_rule.severity = suggestion
+
+dotnet_naming_rule.type_parameters_rule.symbols = type_parameters
+dotnet_naming_rule.type_parameters_rule.style = t_prefix_pascal
+dotnet_naming_rule.type_parameters_rule.severity = suggestion
+
+[tests/**.cs]
+# Test method names may use underscores (Method_Condition_Result).
+dotnet_diagnostic.CA1707.severity = none

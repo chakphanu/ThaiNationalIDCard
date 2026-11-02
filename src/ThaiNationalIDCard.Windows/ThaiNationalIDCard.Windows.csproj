@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>ThaiNationalIDCard.Windows</RootNamespace>
+    <AssemblyName>ThaiNationalIDCard.Windows</AssemblyName>
+    <!-- Placeholder: not packed until phase 4 adds the real helper. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ThaiNationalIDCard\ThaiNationalIDCard.csproj" />
+  </ItemGroup>
+
+</Project>
