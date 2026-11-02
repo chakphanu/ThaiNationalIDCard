@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reflection;
 using PCSC;
 using PCSC.Exceptions;
+using PCSC.Iso7816;
 using PCSC.Monitoring;
+using PCSC.Utils;
 using Xunit;
 
 namespace ThaiNationalIDCard.Tests
@@ -170,6 +172,300 @@ namespace ThaiNationalIDCard.Tests
             var cmds = CardScripts.PhotoCommands();
             Assert.Equal("80b0017b0200ff", cmds[0]);
             Assert.Equal("80b0146802" + "00ff", cmds[19]);
+        }
+
+        // ---- direct-answer reader: first transmit returns data + 90 00 (issues #25, #15) ----
+
+        private static readonly byte[] ExpectedPhoto = Enumerable.Range(0, 20).SelectMany(CardScripts.PhotoChunk).ToArray();
+
+        [Fact]
+        public void Fake_reports_insufficient_buffer_when_the_receive_buffer_is_too_small()
+        {
+            var reader = new FakeReader();
+            reader.On("00", new byte[257]);
+
+            var small = new byte[256];
+            Assert.Equal(SCardError.InsufficientBuffer, reader.Transmit(IntPtr.Zero, new byte[] { 0x00 }, ref small));
+
+            var enough = new byte[258];
+            Assert.Equal(SCardError.Success, reader.Transmit(IntPtr.Zero, new byte[] { 0x00 }, ref enough));
+            Assert.Equal(257, enough.Length);
+        }
+
+        [Fact]
+        public void Direct_answer_photo_read_gives_the_exact_bytes()
+        {
+            var reader = CardScripts.NewCard(withPhoto: true, directAnswer: true);
+            var card = NewReader(reader);
+
+            Personal p = card.readAllPhoto();
+
+            Assert.Equal(ExpectedPhoto, p.PhotoRaw);
+        }
+
+        [Fact]
+        public void Direct_answer_photo_has_no_status_words_at_chunk_boundaries()
+        {
+            var reader = CardScripts.NewCard(withPhoto: true, directAnswer: true);
+            var card = NewReader(reader);
+
+            byte[] photo = card.readAllPhoto().PhotoRaw;
+
+            Assert.Equal(20 * 255, photo.Length);
+            for (int chunk = 1; chunk < 20; chunk++)
+            {
+                int boundary = chunk * 255;
+                Assert.False(photo[boundary] == 0x90 && photo[boundary + 1] == 0x00, "90 00 after chunk " + chunk);
+            }
+        }
+
+        [Fact]
+        public void Direct_answer_photo_read_transmits_once_per_chunk_without_get_response()
+        {
+            var reader = CardScripts.NewCard(withPhoto: true, directAnswer: true);
+            var card = NewReader(reader);
+
+            card.readAllPhoto();
+
+            foreach (string cmd in CardScripts.PhotoCommands())
+                Assert.Equal(1, reader.CountOf(cmd));
+            Assert.Equal(1 + 5 + 20, reader.Sent.Count); // select + 5 files + 20 chunks, no GET RESPONSE
+            Assert.DoesNotContain(reader.SentHex, h => h.StartsWith("00c0", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Direct_answer_text_fields_have_no_trailing_status_word_garbage()
+        {
+            var reader = CardScripts.NewCard(directAnswer: true);
+            var card = NewReader(reader);
+
+            Personal p = card.readAll();
+
+            Assert.Equal(CardScripts.SyntheticCitizenId, p.Citizenid);
+            Assert.Equal("Test Issuer".PadRight(100), p.Issuer);
+            Assert.Equal("Test Province", p.addrProvince);
+            Assert.Equal(new DateTime(2026, 1, 30), p.Expire);
+            Assert.Equal(new DateTime(1997, 1, 31), p.Birthday);
+        }
+
+        [Fact]
+        public void Direct_answer_strips_only_the_status_word_not_90_00_inside_the_data()
+        {
+            var data = new byte[] { 0x31, 0x90, 0x00, 0x32, 0x90, 0x00 };
+            var reader = new FakeReader { Atr = CardScripts.NewCard().Atr, DirectAnswer = true };
+            reader.On(CardScripts.SelectApplet, CardScripts.Sw(0x90, 0x00));
+            reader.OnData(CardScripts.Cid, data);
+            var card = NewReader(reader);
+
+            Personal p = card.readCitizenid();
+
+            Assert.Equal(Decode(data), p.Citizenid);
+        }
+
+        [Fact]
+        public void Direct_answer_accepts_256_data_bytes_plus_the_status_word()
+        {
+            var data = Enumerable.Range(0, 256).Select(k => (byte)0x41).ToArray();
+            var reader = new FakeReader { Atr = CardScripts.NewCard().Atr, DirectAnswer = true };
+            reader.On(CardScripts.SelectApplet, CardScripts.Sw(0x90, 0x00));
+            reader.OnData(CardScripts.Cid, data);
+            var card = NewReader(reader);
+
+            Assert.Equal(new string('A', 256), card.readCitizenid().Citizenid);
+        }
+
+        [Fact]
+        public void Status_word_alone_on_first_transmit_gives_an_empty_result()
+        {
+            var reader = new FakeReader { Atr = CardScripts.NewCard().Atr };
+            reader.On(CardScripts.SelectApplet, CardScripts.Sw(0x90, 0x00));
+            reader.On(CardScripts.Cid, CardScripts.Sw(0x90, 0x00));
+            var card = NewReader(reader);
+
+            Assert.Equal(string.Empty, card.readCitizenid().Citizenid);
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 0x6A, 0x82 })]             // error status alone
+        [InlineData(new byte[] { 0x31, 0x32, 0x62, 0x83 })] // data + warning status
+        [InlineData(new byte[] { 0x31, 0x32, 0x6C, 0x0D })] // data + wrong-length status
+        public void Other_status_words_on_first_transmit_are_returned_as_before(byte[] response)
+        {
+            var reader = new FakeReader { Atr = CardScripts.NewCard().Atr };
+            reader.On(CardScripts.SelectApplet, CardScripts.Sw(0x90, 0x00));
+            reader.On(CardScripts.Cid, response);
+            var card = NewReader(reader);
+
+            Assert.Equal(Decode(response), card.readCitizenid().Citizenid);
+        }
+
+        [Fact]
+        public void One_byte_response_still_throws_as_before()
+        {
+            var reader = new FakeReader { Atr = CardScripts.NewCard().Atr };
+            reader.On(CardScripts.SelectApplet, CardScripts.Sw(0x90, 0x00));
+            reader.On(CardScripts.Cid, new byte[] { 0x90 });
+            var card = NewReader(reader);
+
+            Assert.Throws<InvalidApduException>(() => card.readCitizenid());
+            Assert.False(reader.IsConnected);
+        }
+
+        private static string Decode(byte[] bytes) => System.Text.Encoding.GetEncoding("TIS-620").GetString(bytes);
+
+        // ---- Open without a reader name tries the readers in order (issue #14) ----
+
+        private const string Reader0 = "Fake Reader 0";
+        private const string Reader1 = "Fake Reader 1";
+        private const string Reader2 = "Fake Reader 2";
+
+        private static ThaiIDCard NewMultiReader(FakeReader reader, out FakeContext context)
+        {
+            ThaiIDCard card = NewReader(reader, out context);
+            context.Readers = new[] { Reader0, Reader1, Reader2 };
+            return card;
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void Open_without_name_uses_the_second_reader_when_the_first_connect_fails(string name)
+        {
+            var reader = CardScripts.NewCard();
+            reader.ConnectErrorByReader[Reader0] = SCardError.RemovedCard;
+            var card = NewMultiReader(reader, out var context);
+
+            Assert.True(card.Open(name));
+
+            Assert.Equal(new[] { Reader0, Reader1 }, reader.ConnectAttempts);
+            Assert.Equal(Reader1, reader.ConnectedReaderName);
+            Assert.Equal(1, reader.CountOf(CardScripts.SelectApplet));
+            Assert.Equal(0, context.ReleaseCalls);
+            Assert.Equal(0, card.ErrorCode());
+            Assert.Null(card.Error());
+        }
+
+        [Fact]
+        public void ReadAll_without_name_reads_through_the_second_reader()
+        {
+            var reader = CardScripts.NewCard();
+            reader.ConnectErrorByReader[Reader0] = SCardError.NoSmartcard;
+            var card = NewMultiReader(reader, out _);
+
+            Personal p = card.readAll();
+
+            Assert.NotNull(p);
+            Assert.Equal(CardScripts.SyntheticCitizenId, p.Citizenid);
+        }
+
+        [Fact]
+        public void Open_without_name_stops_at_the_first_reader_that_connects()
+        {
+            var reader = CardScripts.NewCard();
+            var card = NewMultiReader(reader, out _);
+
+            Assert.True(card.Open());
+
+            Assert.Equal(new[] { Reader0 }, reader.ConnectAttempts);
+        }
+
+        [Fact]
+        public void All_readers_failing_reports_the_first_error_after_trying_each()
+        {
+            var reader = CardScripts.NewCard();
+            reader.ConnectErrorByReader[Reader0] = SCardError.RemovedCard;
+            reader.ConnectErrorByReader[Reader1] = SCardError.NoSmartcard;
+            reader.ConnectErrorByReader[Reader2] = SCardError.SharingViolation;
+            var card = NewMultiReader(reader, out _);
+
+            Assert.False(card.Open());
+
+            Assert.Equal(new[] { Reader0, Reader1, Reader2 }, reader.ConnectAttempts);
+            Assert.Equal(256, card.ErrorCode());
+            Assert.Equal("Open Err: " + SCardHelper.StringifyError(SCardError.RemovedCard) + " (RemovedCard)", card.Error());
+        }
+
+        [Fact]
+        public void All_readers_failing_releases_the_context()
+        {
+            var reader = CardScripts.NewCard();
+            reader.ConnectError = SCardError.NoSmartcard;
+            var card = NewMultiReader(reader, out var context);
+
+            Assert.False(card.Open());
+
+            Assert.Equal(1, context.ReleaseCalls);
+            Assert.False(reader.IsConnected);
+        }
+
+        [Fact]
+        public void Single_reader_connect_failure_reports_the_same_error_as_before()
+        {
+            var reader = CardScripts.NewCard();
+            reader.ConnectError = SCardError.NoSmartcard;
+            var card = NewReader(reader);
+
+            Assert.False(card.Open());
+
+            Assert.Equal(new[] { Reader0 }, reader.ConnectAttempts);
+            Assert.Equal(256, card.ErrorCode());
+            Assert.Equal("Open Err: " + SCardHelper.StringifyError(SCardError.NoSmartcard) + " (NoSmartcard)", card.Error());
+        }
+
+        [Fact]
+        public void Open_with_explicit_name_never_tries_another_reader()
+        {
+            var reader = CardScripts.NewCard();
+            reader.ConnectErrorByReader[Reader1] = SCardError.RemovedCard;
+            var card = NewMultiReader(reader, out var context);
+
+            Assert.False(card.Open(Reader1));
+
+            Assert.Equal(new[] { Reader1 }, reader.ConnectAttempts);
+            Assert.Contains("RemovedCard", card.Error());
+            Assert.Equal(1, context.ReleaseCalls);
+        }
+
+        [Fact]
+        public void Monitor_callback_reads_only_the_reader_that_raised_it()
+        {
+            var reader = CardScripts.NewCard();
+            reader.ConnectErrorByReader[Reader1] = SCardError.RemovedCard;
+            var card = NewMultiReader(reader, out _);
+            var received = new List<Personal>();
+            card.eventCardInserted += received.Add;
+
+            RaiseInserted(card, Reader1);
+
+            Assert.Equal(new[] { Reader1 }, reader.ConnectAttempts);
+            Assert.Null(Assert.Single(received));
+        }
+
+        [Fact]
+        public void Failed_applet_select_on_a_connected_reader_does_not_move_on()
+        {
+            var reader = new FakeReader { Atr = CardScripts.NewCard().Atr };
+            reader.On(CardScripts.SelectApplet, CardScripts.Sw(0x6A, 0x82));
+            var card = NewMultiReader(reader, out var context);
+
+            Assert.False(card.Open());
+
+            Assert.Equal(new[] { Reader0 }, reader.ConnectAttempts);
+            Assert.Equal(1, card.ErrorCode());
+            Assert.Equal(1, context.ReleaseCalls);
+        }
+
+        [Fact]
+        public void Select_transmit_error_on_a_connected_reader_does_not_move_on()
+        {
+            var reader = CardScripts.NewCard();
+            reader.OnError(CardScripts.SelectApplet, SCardError.RemovedCard);
+            var card = NewMultiReader(reader, out _);
+
+            Assert.False(card.Open());
+
+            Assert.Equal(new[] { Reader0 }, reader.ConnectAttempts);
+            Assert.Contains("RemovedCard", card.Error());
         }
 
         // ---- second Transmit (GET RESPONSE) error handling ----

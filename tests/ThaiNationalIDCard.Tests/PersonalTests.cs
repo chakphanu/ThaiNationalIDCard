@@ -195,6 +195,15 @@ namespace ThaiNationalIDCard.Tests
         }
 
         [Fact]
+        public void Lifetime_card_raw_expire_99999999_clamps_to_the_last_day_of_year_9456()
+        {
+            // Issue #3: lifetime cards store 99999999. Month and day are clamped; the year is still 9999 - 543.
+            var p = WithIssueExpire("25600131", "99999999");
+            Assert.Equal(new DateTime(9456, 12, 31), p.Expire);
+            Assert.Equal("94561231", p.ExpireString);
+        }
+
+        [Fact]
         public void Issue_and_Expire_without_data_throw_as_before()
         {
             var empty = new Personal();

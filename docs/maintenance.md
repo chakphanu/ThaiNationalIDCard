@@ -1,8 +1,7 @@
 # release/2.x maintenance policy
 
-This branch (`release/2.x`) is the maintenance line of the 2.x library. The `master` branch README still says that
-the original repository is not maintained; that wording is unchanged. This page only describes what happens on
-the `release/2.x` branch.
+This branch (`release/2.x`) is the compatibility line of the 2.x library. v3 is developed separately. This page only
+describes what happens on the `release/2.x` branch.
 
 ## Policy
 
@@ -20,9 +19,44 @@ Bug-fix release, see `CHANGELOG.md` for the list. Build system notes:
 - SDK-style multi-target project (`ThaiNationalIDCard/ThaiNationalIDCard.csproj`). The old `release-40/45/...`
   configurations only changed the output path and no longer exist; every target is built by `Release`.
 - The NuGet package now contains `lib/net40`, `lib/net45`, `lib/net452`, `lib/net46` and `lib/net461`, and depends on
-  PCSC 5.0.0. The 2.0.0 package only had `lib/net40` and bundled an old `pcsc-sharp.dll`.
+  PCSC 5.0.0. The 2.0.0 package only had `lib/net40`, depended on PCSC 3.7.0 and bundled an old `pcsc-sharp.dll`.
 - AssemblyVersion stays `2.0.0.0` (binding redirects keep working); the package and file version are 2.0.1.
   `ThaiIDCard.Version()` reports the assembly version.
+
+## Questions from the issue tracker
+
+**Does it work on .NET Framework 3.5? (#6)** No. PCSC 5.0.0 starts at net40, so that is the lowest target of 2.x.
+
+**Why do I get "'TIS-620' is not a supported encoding name"? (#7)** That error appears on .NET Core. The 2.x line
+targets .NET Framework only. Use v3 for modern .NET.
+
+**Can I read the religion or the request number under the photo? (#12)** Not with this library. In #12 the maintainer
+answered that the card does not store religion, then added that some card version might, which would need a sample
+card and a scan of every address. The location of the request number is unknown.
+
+**Why is my photo corrupt when I concatenate the 20 chunks? (#15)** Each APDU response ends in 2 status bytes (`90 00`
+on success). They are not image data, so remove them if you concatenate responses yourself. Or use
+`Personal.PhotoRaw` from `readAllPhoto()`, which already holds only the image bytes.
+
+**How do I tell which reader raised an event? (#18)** The 2.x events do not carry the reader name. Use one
+`ThaiIDCard` instance per reader, keep the instances referenced, and capture the name in the handler. Reporting the
+reader in the events is planned for v3.
+
+```csharp
+var cards = new List<ThaiIDCard>();
+foreach (string name in new ThaiIDCard().GetReaders())
+{
+    string reader = name;
+    var card = new ThaiIDCard();
+    card.eventCardInserted += personal => OnInserted(reader, personal);
+    card.eventCardRemoved += () => OnRemoved(reader);
+    card.MonitorStart(reader);
+    cards.Add(card);
+}
+```
+
+**Which NuGet packages do I need? (#20)** From 2.0.1 install only `ThaiNationalIDCard`. NuGet installs PCSC 5.0.0 and
+PCSC.Iso7816 5.0.0 as dependencies.
 
 ## Build, test, pack
 

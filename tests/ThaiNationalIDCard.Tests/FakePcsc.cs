@@ -44,7 +44,11 @@ namespace ThaiNationalIDCard.Tests
     /// Scripted in-memory card behind ISCardReader. Responses are keyed by the command bytes as lowercase hex.
     /// Several responses for one command are returned in order, the last one repeats.
     /// Every transmitted command is recorded so tests can count them. Unscripted commands fail loudly.
-    /// Transmit returns exact-length response buffers (the same shape PCSC's Transmit(ref) produces).
+    /// Transmit returns exact-length response buffers (the same shape PCSC's Transmit(ref) produces) and
+    /// SCardError.InsufficientBuffer when the receive buffer passed in is smaller than the response.
+    /// By default CardScripts.OnData models the "61 xx then GET RESPONSE" reader; with DirectAnswer set it models a
+    /// reader that answers data + 90 00 on the first transmit. That mode is inferred from issues #25 and #15, it has
+    /// not been observed on hardware by this test suite.
     /// </summary>
     internal sealed class FakeReader : ISCardReader
     {
@@ -54,10 +58,18 @@ namespace ThaiNationalIDCard.Tests
 
         public byte[] Atr { get; set; } = new byte[] { 0x3B, 0x79, 0x18, 0x00, 0x00, 0xFF };
         public SCardError ConnectError { get; set; } = SCardError.Success;
+
+        /// <summary>Connect error per reader name, for tests with several readers.</summary>
+        public Dictionary<string, SCardError> ConnectErrorByReader { get; } = new Dictionary<string, SCardError>();
+
+        /// <summary>When true, CardScripts.OnData scripts data + 90 00 as the answer to the first transmit.</summary>
+        public bool DirectAnswer { get; set; }
+
         public SCardProtocol Protocol { get; set; } = SCardProtocol.T1;
 
         public List<byte[]> Sent { get; } = new List<byte[]>();
         public int ConnectCalls { get; private set; }
+        public List<string> ConnectAttempts { get; } = new List<string>();
         public int DisconnectCalls { get; private set; }
         public string ConnectedReaderName { get; private set; }
 
@@ -93,9 +105,12 @@ namespace ThaiNationalIDCard.Tests
         public SCardError Connect(string readerName, SCardShareMode mode, SCardProtocol preferredProtocol)
         {
             ConnectCalls++;
+            ConnectAttempts.Add(readerName);
             ConnectedReaderName = readerName;
             if (ConnectError != SCardError.Success)
                 return ConnectError;
+            if (ConnectErrorByReader.TryGetValue(readerName, out var readerError))
+                return readerError;
             IsConnected = true;
             return SCardError.Success;
         }
@@ -129,7 +144,11 @@ namespace ThaiNationalIDCard.Tests
 
             _callIndex.TryGetValue(key, out int index);
             _callIndex[key] = index + 1;
-            pbRecvBuffer = (byte[])list[Math.Min(index, list.Count - 1)].Clone();
+            byte[] response = list[Math.Min(index, list.Count - 1)];
+            if (pbRecvBuffer == null || pbRecvBuffer.Length < response.Length)
+                return SCardError.InsufficientBuffer;
+
+            pbRecvBuffer = (byte[])response.Clone();
             return SCardError.Success;
         }
 

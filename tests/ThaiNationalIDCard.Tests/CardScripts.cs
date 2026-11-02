@@ -31,9 +31,15 @@ namespace ThaiNationalIDCard.Tests
         public static string GetResponse(bool type01, byte sw2) =>
             "00c000" + (type01 ? "01" : "00") + sw2.ToString("x2", System.Globalization.CultureInfo.InvariantCulture);
 
-        /// <summary>Script one command that answers "61 xx" and then the data via GET RESPONSE.</summary>
+        /// <summary>
+        /// Script one command that answers "61 xx" and then the data via GET RESPONSE, or data + 90 00 on the first
+        /// transmit when fake.DirectAnswer is set (GET RESPONSE then stays unscripted and would fail loudly).
+        /// </summary>
         public static FakeReader OnData(this FakeReader fake, string commandHex, byte[] data, bool type01 = false)
         {
+            if (fake.DirectAnswer)
+                return fake.On(commandHex, WithOk(data));
+
             byte sw2 = (byte)data.Length;
             fake.On(commandHex, Sw(0x61, sw2));
             fake.On(GetResponse(type01, sw2), WithOk(data));
@@ -58,9 +64,9 @@ namespace ThaiNationalIDCard.Tests
         /// Scripts a complete card: select + the five text files. Photo chunks are scripted when withPhoto is true.
         /// The ATR decides the command set the library will use (3B 67 = Type01).
         /// </summary>
-        public static FakeReader NewCard(bool type01 = false, bool withPhoto = false)
+        public static FakeReader NewCard(bool type01 = false, bool withPhoto = false, bool directAnswer = false)
         {
-            var fake = new FakeReader();
+            var fake = new FakeReader { DirectAnswer = directAnswer };
             fake.Atr = type01 ? new byte[] { 0x3B, 0x67, 0x00, 0x00 } : new byte[] { 0x3B, 0x79, 0x18, 0x00 };
             fake.On(SelectApplet, Sw(0x90, 0x00));
             fake.OnData(Cid, Tis(SyntheticCitizenId), type01);

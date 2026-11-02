@@ -28,6 +28,30 @@ behavior compatible with 2.0.0.
   `Birthday` does (below 1 -> 1) and like `Expire` did (above 12 -> 12, above 31 -> 31). A day beyond the month
   length (for example 31 April) is clamped to the last day of the month. `Personal.Birthday` and
   `BirthdayYearString` are unchanged on purpose (year 0 still maps to the current year, see PR #22).
+- `SendCommand` on readers that answer with data and `90 xx` on the first transmit (issues #25, #15): the first
+  receive buffer is now 258 bytes, so `readAllPhoto` no longer fails with "data buffer too small", and the trailing 2
+  status bytes are removed, so they no longer end up in text fields or between photo chunks. Other status words and
+  the `61 xx` + GET RESPONSE path are unchanged. Behavior notes: a first response of only `90 xx` now gives an empty
+  result; a first response over 256 bytes with another status word is now returned instead of failing. This reader
+  behavior is inferred from the issue reports; it has not been checked on hardware.
+- `Open` without a reader name (issue #14) tries the readers in order and moves on when `Connect` fails. If all fail,
+  the error of the first reader is reported, so single-reader users see the same error as before. An explicit reader
+  name never falls through. Only `Connect` failures move on: if the next reader connects but its card fails the
+  applet select, `Open` reports that failure (error code 1) instead of the first reader's error.
+- `MonitorStart` cancels the previous monitor before creating a new one (it is not disposed, so its context stays open until exit). Behavior note: calling it twice
+  on one `ThaiIDCard` used to leave both monitors running; only the last one runs now. Use one instance per reader.
+- Added a test for the raw lifetime expire value `99999999` (issue #3). `Expire` still returns 31 Dec 9456 for it.
+
+### Previously unreleased changes
+
+The published 2.0.0 package depended on PCSC 3.7.0 (and also bundled `pcsc-sharp.dll`); it was built on 2017-07-13.
+2.0.1 depends on PCSC 5.0.0 and PCSC.Iso7816 5.0.0, and it is the first package to include these changes from the
+repository history:
+
+- 2017-12: new `Personal` getters `Th_Middlename`, `En_Middlename`, `BirthdayYearString` and `ExpireString`.
+- 2018-05: RAW protocol support for legacy readers (`1da1edf`), upgrade to PCSC 4.0.0 and PCSC.Iso7816 4.0.0.
+- 2020-02: `Birthday` no longer throws for year, month or day `00` (`df52b19`, PR #22); upgrade to PCSC 5.0.0 and
+  PCSC.Iso7816 5.0.0 (`caba0d1`).
 
 ### Performance
 
@@ -38,8 +62,8 @@ behavior compatible with 2.0.0.
 ### Build and packaging
 
 - SDK-style project multi-targeting net40, net45, net452, net46 and net461. The NuGet package contains all five
-  `lib/` folders (2.0.0 only had `lib/net40`) and depends on PCSC 5.0.0 and PCSC.Iso7816 5.0.0 (2.0.0 bundled an old
-  `pcsc-sharp.dll`). The hint paths that pointed outside the repository are gone.
+  `lib/` folders (2.0.0 only had `lib/net40`) and depends on PCSC 5.0.0 and PCSC.Iso7816 5.0.0 (2.0.0 depended on PCSC 3.7.0 and
+  bundled an old `pcsc-sharp.dll`). The hint paths that pointed outside the repository are gone.
 - The example WinForms project is SDK-style, targets net461 and uses PCSC 5.0.0 through the library project.
 - `AssemblyVersion` stays 2.0.0.0; package and file version are 2.0.1.
 - Removed the committed `.vs` folder and `.nupkg` files; `.gitignore` updated.

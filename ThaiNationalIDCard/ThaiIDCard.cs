@@ -125,6 +125,21 @@ namespace ThaiNationalIDCard
         {
             try
             {
+                // A second MonitorStart used to leave the previous monitor running, so events fired twice.
+                // Cancel only, like MonitorStop: Dispose would release the context while its thread may still
+                // be running. A failure to stop the old monitor must not prevent the new one from starting.
+                if (_monitor != null)
+                {
+                    try
+                    {
+                        _monitor.Cancel();
+                    }
+                    catch (PCSCException ex)
+                    {
+                        Debug.Print("MonitorStart: previous monitor: " + ex.Message);
+                    }
+                }
+
                 _monitor = new SCardMonitor(_contextFactory, SCardScope.System);
                 _monitor.CardInserted += (sender, args) => _Inserted(args);
                 _monitor.CardRemoved += (sender, args) => _Removed("CardRemoved", args);
@@ -196,10 +211,17 @@ namespace ThaiNationalIDCard
         private byte[] SendCommand(byte [] command)
         {
             byte[] pbRecvBuffer;
-            pbRecvBuffer = new byte[256];
+            // Issue #25: direct-answer readers return a photo chunk as 255 data + 2 SW on this transmit.
+            pbRecvBuffer = new byte[258];
             _err = _reader.Transmit(_pioSendPci, command, ref pbRecvBuffer);
             CheckErr(_err);
             var responseApdu = new ResponseApdu(pbRecvBuffer, IsoCase.Case2Short, _reader.ActiveProtocol);
+
+            if(responseApdu.SW1.Equals((byte)SW1Code.Normal))
+            {
+                // Issue #15: drop the SW, or 90 xx ends up in text fields and between photo chunks.
+                return pbRecvBuffer.Take(pbRecvBuffer.Length - 2).ToArray();
+            }
 
             if(responseApdu.SW1.Equals((byte)SW1Code.NormalDataResponse))
             {
@@ -313,9 +335,22 @@ namespace ThaiNationalIDCard
                         throw new PCSCException(SCardError.NoReadersAvailable,
                             "Could not find any Smartcard _reader.");
 
-                    _err = _reader.Connect(szReaders[0],
+                    SCardError firstError = _reader.Connect(szReaders[0],
                                 SCardShareMode.Shared,
                                 SCardProtocol.T0 | SCardProtocol.T1);
+                    _err = firstError;
+
+                    // Issue #14: szReaders[0] may be a reader without a card, so try the others in order.
+                    for (int i = 1; i < szReaders.Length && _err != SCardError.Success; i++)
+                    {
+                        _err = _reader.Connect(szReaders[i],
+                                    SCardShareMode.Shared,
+                                    SCardProtocol.T0 | SCardProtocol.T1);
+                    }
+
+                    // All failed: report the first error, so single-reader users see the same error as before.
+                    if (_err != SCardError.Success)
+                        _err = firstError;
                     CheckErr(_err);
                 }
                 else

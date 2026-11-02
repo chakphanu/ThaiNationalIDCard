@@ -1,6 +1,8 @@
-This repo is not maintained.
+Project status
 ==================
-Please checkout new fork at: https://github.com/dotnetthailand/ThaiNationalIDCard
+- `release/2.x` is the compatibility line: bug fixes only, for .NET Framework. See `docs/maintenance.md` and `CHANGELOG.md`.
+- v3 is in development.
+- Community fork, with thanks to the .NET Thailand community: https://github.com/dotnetthailand/ThaiNationalIDCard
 
 
 ThaiNationalIDCard
